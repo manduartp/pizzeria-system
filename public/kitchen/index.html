@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cocina — Pedidos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🍕 Pedidos en Cola</h1>
+    <div id="order-count">0 pedidos</div>
+  </header>
+
+  <main id="orders-container">
+    <p class="empty-message">Sin pedidos pendientes — ¡todo tranquilo!</p>
+  </main>
+
+  <!-- Socket.io is served automatically by the server -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/menu.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

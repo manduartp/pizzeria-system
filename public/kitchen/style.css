@@ -1,0 +1,185 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  background: #16213e;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid #e94560;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header h1 {
+  font-size: 1.4rem;
+}
+
+#order-count {
+  background: #e94560;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+/* ── ORDER GRID ── */
+main {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  padding: 15px;
+}
+
+/* ── ORDER CARD ── */
+.order-card {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 15px;
+  border-left: 5px solid #e94560;
+  animation: slideIn 0.3s ease;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.order-number {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #e94560;
+}
+
+.order-time {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* ── ORDER ITEMS ── */
+.order-item {
+  padding: 6px 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.order-item .quantity {
+  background: #e94560;
+  color: white;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.order-item .item-name {
+  flex: 1;
+}
+
+.order-item .item-details {
+  color: #aaa;
+  font-size: 0.9rem;
+  padding-left: 40px;
+  padding-bottom: 4px;
+}
+
+/* ── NOTES ── */
+.order-notes {
+  margin-top: 10px;
+  padding: 10px;
+  background: #2a2a4a;
+  border-radius: 8px;
+  border-left: 3px solid #ffa500;
+  font-size: 1rem;
+  color: #ffa500;
+}
+
+.order-notes::before {
+  content: '📝 ';
+}
+
+/* ── ADDRESS ── */
+.order-address {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #2a2a4a;
+  border-radius: 8px;
+  border-left: 3px solid #4fc3f7;
+  color: #4fc3f7;
+  font-size: 0.95rem;
+}
+
+.order-address::before {
+  content: '📍 ';
+}
+
+/* ── EMPTY STATE ── */
+.empty-message {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #555;
+  font-size: 1.5rem;
+  padding: 80px 20px;
+}
+
+/* ── ANIMATIONS ── */
+.order-card.completing {
+  animation: fadeOut 0.5s ease forwards;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; transform: scale(0.95); }
+}
+
+/* ── CONNECTION STATUS ── */
+.connection-status {
+  position: fixed;
+  bottom: 15px;
+  right: 15px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.connection-status.connected {
+  background: #2e7d32;
+  color: white;
+}
+
+.connection-status.disconnected {
+  background: #c62828;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
