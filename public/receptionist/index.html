@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recepción — Pedidos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TOP NAV -->
+  <header>
+    <h1>🍕 Pizzería — Recepción</h1>
+    <div class="header-actions">
+      <button id="btn-summary" class="btn-header">📊 Resumen del Día</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- LEFT PANEL: ORDER BUILDER -->
+    <section class="order-builder">
+      <h2>Nuevo Pedido</h2>
+
+      <!-- Category Tabs -->
+      <div class="category-tabs">
+        <button class="tab active" data-category="pizzas">🍕 Pizzas</button>
+        <button class="tab" data-category="sides">🧄 Pan con Ajo</button>
+        <button class="tab" data-category="beverages">🥤 Bebidas</button>
+        <button class="tab" data-category="specials">⭐ Especiales</button>
+      </div>
+
+      <!-- Menu Items Grid -->
+      <div id="menu-grid" class="menu-grid"></div>
+
+      <!-- Pizza Customization Modal -->
+      <div id="pizza-modal" class="modal hidden">
+        <div class="modal-content">
+          <h3 id="modal-pizza-name"></h3>
+          <p id="modal-pizza-price" class="modal-price"></p>
+
+          <!-- Modifiers -->
+          <div class="modifier-section">
+            <label class="checkbox-label">
+              <input type="checkbox" id="mod-orilla">
+              Orilla de Queso (+\$60)
+            </label>
+          </div>
+
+          <!-- Extra Ingredients -->
+          <div class="extras-section">
+            <h4>Ingredientes Extra (+\$30 c/u)</h4>
+            <div id="extras-grid" class="extras-grid"></div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="quantity-section">
+            <button id="qty-minus" class="btn-qty">−</button>
+            <span id="qty-value">1</span>
+            <button id="qty-plus" class="btn-qty">+</button>
+          </div>
+
+          <!-- Notes for this item -->
+          <input type="text" id="item-notes" placeholder="Notas (ej: bien cocida)" class="input-notes">
+
+          <div class="modal-actions">
+            <button id="modal-cancel" class="btn-cancel">Cancelar</button>
+            <button id="modal-add" class="btn-add">Agregar al Pedido</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Details -->
+      <div class="order-details">
+        <input type="text" id="delivery-address" placeholder="📍 Dirección de entrega" class="input-address">
+        <input type="text" id="order-notes" placeholder="📝 Notas generales del pedido" class="input-address">
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANEL: CURRENT ORDER + ACTIVE ORDERS -->
+    <aside class="sidebar">
+
+      <!-- Current Order Being Built -->
+      <div class="current-order">
+        <h3>Pedido Actual</h3>
+        <div id="current-items" class="current-items">
+          <p class="empty-cart">Agrega productos del menú</p>
+        </div>
+        <div class="order-total">
+          <span>Total:</span>
+          <span id="order-total">\$0</span>
+        </div>
+        <button id="btn-send-order" class="btn-send" disabled>
+          Enviar a Cocina 🔥
+        </button>
+      </div>
+
+      <!-- Active Orders -->
+      <div class="active-orders">
+        <h3>Pedidos Activos</h3>
+        <div id="active-orders-list"></div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- Summary Modal -->
+  <div id="summary-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>📊 Resumen del Día</h3>
+      <div id="summary-content"></div>
+      <button id="summary-close" class="btn-cancel">Cerrar</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/menu.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
