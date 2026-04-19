@@ -5,8 +5,9 @@ const socket = io();
 let cart = [];
 let activeOrders = [];
 let currentCategory = 'pizzas';
-let modalData = null;       // pizza currently being customized
-let selectedExtras = [];    // extras selected in modal
+let modalData = null;
+let selectedExtras = [];
+let editingOrderId = null;  // null = new order, number = editing
 
 // ══════════════════════════════════════════════
 //  DOM REFERENCES
@@ -15,7 +16,17 @@ const menuGrid = document.getElementById('menu-grid');
 const currentItemsEl = document.getElementById('current-items');
 const orderTotalEl = document.getElementById('order-total');
 const btnSend = document.getElementById('btn-send-order');
+const btnCancelEdit = document.getElementById('btn-cancel-edit');
 const activeOrdersList = document.getElementById('active-orders-list');
+const builderTitle = document.getElementById('builder-title');
+const cartTitle = document.getElementById('cart-title');
+
+// Form fields
+const clientNameInput = document.getElementById('client-name');
+const clientPhoneInput = document.getElementById('client-phone');
+const deliveryAddressInput = document.getElementById('delivery-address');
+const deliveryFeeInput = document.getElementById('delivery-fee');
+const orderNotesInput = document.getElementById('order-notes');
 
 // Pizza modal
 const pizzaModal = document.getElementById('pizza-modal');
@@ -30,6 +41,14 @@ const itemNotes = document.getElementById('item-notes');
 const summaryModal = document.getElementById('summary-modal');
 const summaryContent = document.getElementById('summary-content');
 
+// Ticket modal
+const ticketModal = document.getElementById('ticket-modal');
+const ticketBody = document.getElementById('ticket-body');
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function peso(n) { return '$' + n; }
 
 // ══════════════════════════════════════════════
 //  CATEGORY TABS
@@ -43,7 +62,6 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-
 // ══════════════════════════════════════════════
 //  MENU RENDERING
 // ══════════════════════════════════════════════
@@ -53,13 +71,10 @@ function renderMenu() {
   menuGrid.innerHTML = items.map(item => `
     <div class="menu-item" data-id="${item.id}" data-category="${currentCategory}">
       <div class="item-name">${item.name}</div>
-      <div class="item-price">
-$$
-{item.price}</div>
+      <div class="item-price">${peso(item.price)}</div>
     </div>
   `).join('');
 
-  // Attach click handlers
   menuGrid.querySelectorAll('.menu-item').forEach(el => {
     el.addEventListener('click', () => handleMenuItemClick(el));
   });
@@ -70,11 +85,9 @@ function handleMenuItemClick(el) {
   const category = el.dataset.category;
 
   if (category === 'pizzas') {
-    // Pizzas open the customization modal
     const pizza = MENU.pizzas.find(p => p.id === id);
     openPizzaModal(pizza);
   } else {
-    // Everything else goes straight to cart
     const item = MENU[category].find(i => i.id === id);
     addToCart({
       name: item.name,
@@ -88,57 +101,76 @@ function handleMenuItemClick(el) {
   }
 }
 
-
 // ══════════════════════════════════════════════
 //  PIZZA CUSTOMIZATION MODAL
 // ══════════════════════════════════════════════
 function openPizzaModal(pizza) {
   modalData = pizza;
   selectedExtras = [];
+  const isCustom = pizza.id === 'personalizada';
 
-  // Reset modal fields
   modalPizzaName.textContent = pizza.name;
-  modalPizzaPrice.textContent = `
-$$
-{pizza.price}`;
+  modalPizzaPrice.textContent = peso(pizza.price);
   modOrilla.checked = false;
   qtyValue.textContent = '1';
   itemNotes.value = '';
 
-  // Render extra ingredient buttons
-  extrasGrid.innerHTML = MENU.extraIngredients.options.map(name => `
-    <button class="extra-btn" data-name="${name}">${name}</button>
-  `).join('');
+  // Custom price section
+  const customPriceSection = document.getElementById('custom-price-section');
+  const customPriceInput = document.getElementById('custom-price');
+  if (isCustom) {
+    customPriceSection.classList.remove('hidden');
+    customPriceInput.value = '';
+  } else {
+    customPriceSection.classList.add('hidden');
+  }
 
-  extrasGrid.querySelectorAll('.extra-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.classList.toggle('selected');
-      const name = btn.dataset.name;
-      if (selectedExtras.includes(name)) {
-        selectedExtras = selectedExtras.filter(e => e !== name);
-      } else {
-        selectedExtras.push(name);
-      }
-      updateModalPrice();
+  // Extras section — hide for custom pizza
+  const extrasSection = document.querySelector('.extras-section');
+  if (isCustom) {
+    extrasSection.classList.add('hidden');
+  } else {
+    extrasSection.classList.remove('hidden');
+    extrasGrid.innerHTML = MENU.extraIngredients.options.map(name => `
+      <button class="extra-btn" data-name="${name}">${name}</button>
+    `).join('');
+
+    extrasGrid.querySelectorAll('.extra-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('selected');
+        const name = btn.dataset.name;
+        if (selectedExtras.includes(name)) {
+          selectedExtras = selectedExtras.filter(e => e !== name);
+        } else {
+          selectedExtras.push(name);
+        }
+        updateModalPrice();
+      });
     });
-  });
+  }
 
   pizzaModal.classList.remove('hidden');
 }
 
 function updateModalPrice() {
   if (!modalData) return;
+  const isCustom = modalData.id === 'personalizada';
   const qty = parseInt(qtyValue.textContent);
-  const base = modalData.price;
-  const orilla = modOrilla.checked ? MENU.modifiers[0].price : 0;
-  const extras = selectedExtras.length * MENU.extraIngredients.price;
-  const total = (base + orilla + extras) * qty;
-  modalPizzaPrice.textContent = `
-$$
-{total}`;
+
+  if (isCustom) {
+    const customPrice = parseFloat(document.getElementById('custom-price').value) || 0;
+    const orilla = modOrilla.checked ? MENU.modifiers[0].price : 0;
+    const total = (customPrice + orilla) * qty;
+    modalPizzaPrice.textContent = peso(total);
+  } else {
+    const base = modalData.price;
+    const orilla = modOrilla.checked ? MENU.modifiers[0].price : 0;
+    const extras = selectedExtras.length * MENU.extraIngredients.price;
+    const total = (base + orilla + extras) * qty;
+    modalPizzaPrice.textContent = peso(total);
+  }
 }
 
-// Quantity controls
 document.getElementById('qty-minus').addEventListener('click', () => {
   const current = parseInt(qtyValue.textContent);
   if (current > 1) {
@@ -153,23 +185,35 @@ document.getElementById('qty-plus').addEventListener('click', () => {
   updateModalPrice();
 });
 
-// Orilla checkbox updates price
 modOrilla.addEventListener('change', updateModalPrice);
 
-// Cancel modal
+document.getElementById('custom-price').addEventListener('input', updateModalPrice);
+
 document.getElementById('modal-cancel').addEventListener('click', () => {
   pizzaModal.classList.add('hidden');
   modalData = null;
 });
 
-// Add pizza to cart from modal
 document.getElementById('modal-add').addEventListener('click', () => {
   if (!modalData) return;
 
+  const isCustom = modalData.id === 'personalizada';
   const qty = parseInt(qtyValue.textContent);
   const modifiers = modOrilla.checked ? ['Orilla de Queso'] : [];
-  const extras = [...selectedExtras];
-  const unitPrice = modalData.price
+  const extras = isCustom ? [] : [...selectedExtras];
+
+  let basePrice;
+  if (isCustom) {
+    basePrice = parseFloat(document.getElementById('custom-price').value) || 0;
+    if (basePrice <= 0) {
+      alert('Ingresa un precio para la pizza personalizada.');
+      return;
+    }
+  } else {
+    basePrice = modalData.price;
+  }
+
+  const unitPrice = basePrice
     + (modOrilla.checked ? MENU.modifiers[0].price : 0)
     + (extras.length * MENU.extraIngredients.price);
 
@@ -186,7 +230,6 @@ document.getElementById('modal-add').addEventListener('click', () => {
   pizzaModal.classList.add('hidden');
   modalData = null;
 });
-
 
 // ══════════════════════════════════════════════
 //  CART MANAGEMENT
@@ -211,7 +254,6 @@ function renderCart() {
     btnSend.disabled = true;
   } else {
     currentItemsEl.innerHTML = cart.map((item, i) => {
-      // Build detail strings
       const details = [];
       if (item.modifiers.length) details.push(item.modifiers.join(', '));
       if (item.extras.length) details.push('+ ' + item.extras.join(', '));
@@ -225,9 +267,7 @@ function renderCart() {
               ? `<div class="cart-item-details">${details.join(' | ')}</div>`
               : ''}
           </div>
-          <span class="cart-item-price">
-$$
-{item.price}</span>
+          <span class="cart-item-price">${peso(item.price)}</span>
           <button class="cart-item-remove" data-index="${i}">✕</button>
         </div>
       `;
@@ -235,7 +275,6 @@ $$
 
     btnSend.disabled = false;
 
-    // Attach remove handlers
     currentItemsEl.querySelectorAll('.cart-item-remove').forEach(btn => {
       btn.addEventListener('click', () => {
         removeFromCart(parseInt(btn.dataset.index));
@@ -243,60 +282,95 @@ $$
     });
   }
 
-  orderTotalEl.textContent = `$${getCartTotal()}`;
+  orderTotalEl.textContent = peso(getCartTotal());
 }
 
+// ══════════════════════════════════════════════
+//  TEXT BUILDERS (the core of the new approach)
+// ══════════════════════════════════════════════
+
+// Kitchen sees ONLY food items — no address, no client, no price
+function buildKitchenText() {
+  return cart.map(item => {
+    let text = `${item.quantity}x ${item.name}`;
+    if (item.modifiers.length) text += ` c/${item.modifiers.join(', ')}`;
+    if (item.extras.length) text += ` +${item.extras.join(', ')}`;
+    if (item.notes) text += ` (${item.notes})`;
+    return text;
+  }).join(', ');
+}
+
+// Display text = full order for DB storage and ticket generation
+function buildDisplayText() {
+  const lines = cart.map(item => {
+    let line = `${item.quantity}x ${item.name}`;
+    if (item.modifiers.length) line += ` c/${item.modifiers.join(', ')}`;
+    if (item.extras.length) line += ` +${item.extras.join(', ')}`;
+    if (item.notes) line += ` (${item.notes})`;
+    line += ` — ${peso(item.price)}`;
+    return line;
+  });
+  return lines.join('\n');
+}
 
 // ══════════════════════════════════════════════
-//  SEND ORDER TO SERVER
+//  SEND / EDIT ORDER
 // ══════════════════════════════════════════════
 btnSend.addEventListener('click', async () => {
   if (cart.length === 0) return;
 
-  const address = document.getElementById('delivery-address').value.trim();
-  const notes = document.getElementById('order-notes').value.trim();
+  const delivery_fee = parseFloat(deliveryFeeInput.value) || 0;
 
-  const order = {
-    items: cart.map(item => ({
-      name: item.name,
-      quantity: item.quantity,
-      price: item.price,
-      unitPrice: item.unitPrice,
-      modifiers: item.modifiers,
-      extras: item.extras,
-      notes: item.notes
-    })),
-    total: getCartTotal(),
-    delivery_address: address,
-    notes: notes
-  };
+  // Confirm if delivery fee is 0
+  if (delivery_fee === 0) {
+    if (!confirm('El costo de envío es \$0. ¿Continuar?')) return;
+  }
 
-  // Disable button while sending
+  const kitchen_text = buildKitchenText();
+  const display_text = buildDisplayText();
+  const total = getCartTotal();
+  const client_name = clientNameInput.value.trim();
+  const client_phone = clientPhoneInput.value.trim();
+  const delivery_address = deliveryAddressInput.value.trim();
+  const notes = orderNotesInput.value.trim();
+
   btnSend.disabled = true;
   btnSend.textContent = 'Enviando...';
 
   try {
-    const response = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order)
-    });
+    let response;
 
-    if (!response.ok) {
-      throw new Error('Server error');
+    if (editingOrderId) {
+      response = await fetch(`/api/orders/${editingOrderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kitchen_text, display_text, total,
+          client_name, client_phone, delivery_address, delivery_fee, notes
+        })
+      });
+    } else {
+      response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kitchen_text, display_text, total,
+          client_name, client_phone, delivery_address, delivery_fee, notes
+        })
+      });
     }
 
-    const created = await response.json();
-    console.log(`📋 Order #${created.id} sent!`);
+    if (!response.ok) throw new Error('Server error');
 
-    // Clear the cart and form
-    cart = [];
-    renderCart();
-    document.getElementById('delivery-address').value = '';
-    document.getElementById('order-notes').value = '';
+    const result = await response.json();
+    console.log('Order #' + result.id + (editingOrderId ? ' updated' : ' created'));
 
-    // Brief success feedback
-    btnSend.textContent = '✅ ¡Enviado!';
+    clearForm();
+
+    btnSend.textContent = editingOrderId ? '✅ ¡Actualizado!' : '✅ ¡Enviado!';
+    editingOrderId = null;
+    updateBuilderMode();
+
     setTimeout(() => {
       btnSend.textContent = 'Enviar a Cocina 🔥';
     }, 1500);
@@ -309,6 +383,89 @@ btnSend.addEventListener('click', async () => {
   }
 });
 
+// ══════════════════════════════════════════════
+//  EDIT MODE
+// ══════════════════════════════════════════════
+function enterEditMode(order) {
+  editingOrderId = order.id;
+  cart = parseDisplayText(order.display_text);
+  clientNameInput.value = order.client_name || '';
+  clientPhoneInput.value = order.client_phone || '';
+  deliveryAddressInput.value = order.delivery_address || '';
+  deliveryFeeInput.value = order.delivery_fee || '';
+  orderNotesInput.value = order.notes || '';
+  renderCart();
+  updateBuilderMode();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function parseDisplayText(text) {
+  if (!text) return [];
+  return text.split('\n').map(line => {
+    // Format: "2x Hawaiana c/Orilla de Queso +Champiñones (bien cocida) — \$510"
+    const priceMatch = line.match(/— \$(\d+)$/);
+    const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+    const withoutPrice = line.replace(/\s*— \$\d+$/, '');
+
+    const qtyMatch = withoutPrice.match(/^(\d+)x\s+/);
+    const quantity = qtyMatch ? parseInt(qtyMatch[1]) : 1;
+    let rest = withoutPrice.replace(/^\d+x\s+/, '');
+
+    // Extract notes in parentheses
+    const notesMatch = rest.match(/\s*\(([^)]+)\)\s*$/);
+    const notes = notesMatch ? notesMatch[1] : '';
+    rest = rest.replace(/\s*\([^)]+\)\s*$/, '');
+
+    // Extract extras after +
+    const extrasMatch = rest.match(/\s*\+(.+)$/);
+    const extras = extrasMatch
+      ? extrasMatch[1].split(',').map(e => e.trim())
+      : [];
+    rest = rest.replace(/\s*\+.+$/, '');
+
+    // Extract modifiers after c/
+    const modMatch = rest.match(/\s*c\/(.+)$/);
+    const modifiers = modMatch
+      ? modMatch[1].split(',').map(m => m.trim())
+      : [];
+    rest = rest.replace(/\s*c\/.+$/, '');
+
+    const name = rest.trim();
+    const unitPrice = quantity > 0 ? Math.round(price / quantity) : price;
+
+    return { name, quantity, price, unitPrice, modifiers, extras, notes };
+  });
+}
+
+function updateBuilderMode() {
+  if (editingOrderId) {
+    builderTitle.textContent = `Editando Pedido #${editingOrderId}`;
+    cartTitle.textContent = `Editando #${editingOrderId}`;
+    btnSend.textContent = '💾 Guardar Cambios';
+    btnCancelEdit.classList.remove('hidden');
+  } else {
+    builderTitle.textContent = 'Nuevo Pedido';
+    cartTitle.textContent = 'Pedido Actual';
+    btnSend.textContent = 'Enviar a Cocina 🔥';
+    btnCancelEdit.classList.add('hidden');
+  }
+}
+
+btnCancelEdit.addEventListener('click', () => {
+  editingOrderId = null;
+  clearForm();
+  updateBuilderMode();
+});
+
+function clearForm() {
+  cart = [];
+  renderCart();
+  clientNameInput.value = '';
+  clientPhoneInput.value = '';
+  deliveryAddressInput.value = '';
+  deliveryFeeInput.value = '';
+  orderNotesInput.value = '';
+}
 
 // ══════════════════════════════════════════════
 //  ACTIVE ORDERS
@@ -321,45 +478,88 @@ function renderActiveOrders() {
   }
 
   activeOrdersList.innerHTML = activeOrders.map(order => {
-    const itemsSummary = order.items.map(item =>
-      `${item.quantity}x ${item.name}`
-    ).join(', ');
-
     const timeStr = formatTime(order.created_at);
+    const modified = order.modified_at ? ' (Modificado)' : '';
+    const fee = order.delivery_fee ? order.delivery_fee : 0;
+    const grandTotal = order.total + fee;
 
     return `
       <div class="active-order-card" id="active-order-${order.id}">
         <div class="active-order-header">
-          <span class="active-order-id">#${order.id} — ${timeStr}</span>
-          <span class="active-order-total">
-$$
-{order.total}</span>
+          <span class="active-order-id">#${order.id} — ${timeStr}${modified}</span>
+          <span class="active-order-total">${peso(grandTotal)}</span>
         </div>
-        <div class="active-order-items">${itemsSummary}</div>
+        <div class="active-order-items">${order.display_text.replace(/\n/g, '<br>')}</div>
+        ${order.client_name
+          ? `<div class="active-order-detail">👤 ${order.client_name}</div>`
+          : ''}
+        ${order.client_phone
+          ? '<div class="active-order-detail">📞 ' + order.client_phone + '</div>'
+          : ''}
         ${order.delivery_address
-          ? `<div class="active-order-items">📍 ${order.delivery_address}</div>`
+          ? `<div class="active-order-detail">📍 ${order.delivery_address}</div>`
+          : ''}
+        ${fee > 0
+          ? `<div class="active-order-detail">🚗 Envío: ${peso(fee)}</div>`
           : ''}
         ${order.notes
-          ? `<div class="active-order-items">📝 ${order.notes}</div>`
+          ? `<div class="active-order-detail">📝 ${order.notes}</div>`
           : ''}
-        <button class="btn-complete" data-id="${order.id}">
-          ✅ Marcar Completado
-        </button>
+        <div class="active-order-actions">
+          <button class="btn-edit" data-id="${order.id}">✏️ Editar</button>
+          <button class="btn-ticket" data-id="${order.id}">🧾 Ticket</button>
+          <button class="btn-complete" data-id="${order.id}">✅ Completar</button>
+          <button class="btn-cancel-order" data-id="${order.id}">🗑️ Eliminar</button>
+        </div>
       </div>
     `;
   }).join('');
 
-  // Attach complete handlers
+  // Edit handlers
+  activeOrdersList.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const order = activeOrders.find(o => o.id === parseInt(btn.dataset.id));
+      if (order) enterEditMode(order);
+    });
+  });
+
+  // Ticket handlers
+  activeOrdersList.querySelectorAll('.btn-ticket').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const order = activeOrders.find(o => o.id === parseInt(btn.dataset.id));
+      if (order) showTicket(order);
+    });
+  });
+
+  // Complete handlers
   activeOrdersList.querySelectorAll('.btn-complete').forEach(btn => {
     btn.addEventListener('click', () => {
       completeOrder(parseInt(btn.dataset.id));
     });
   });
+
+    // Cancel handlers
+  activeOrdersList.querySelectorAll('.btn-cancel-order').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Cancelar este pedido?')) return;
+      const id = parseInt(btn.dataset.id);
+      try {
+        const res = await fetch(`/api/orders/${id}/cancel`, { method: 'PATCH' });
+        if (!res.ok) throw new Error();
+        if (editingOrderId === id) {
+          editingOrderId = null;
+          clearForm();
+          updateBuilderMode();
+        }
+      } catch (err) {
+        alert('Error al cancelar el pedido.');
+      }
+    });
+  });
 }
 
 async function completeOrder(id) {
-  // Optimistic: immediately change button text
-  const btn = activeOrdersList.querySelector(`[data-id="${id}"]`);
+  const btn = activeOrdersList.querySelector(`.btn-complete[data-id="${id}"]`);
   if (btn) {
     btn.textContent = 'Completando...';
     btn.disabled = true;
@@ -369,98 +569,247 @@ async function completeOrder(id) {
     const response = await fetch(`/api/orders/${id}/complete`, {
       method: 'PATCH'
     });
+    if (!response.ok) throw new Error('Server error');
 
-    if (!response.ok) {
-      throw new Error('Server error');
+    // If we were editing this order, exit edit mode
+    if (editingOrderId === id) {
+      editingOrderId = null;
+      clearForm();
+      updateBuilderMode();
     }
-
-    console.log(`✅ Order #${id} completed`);
-    // The socket event will handle removal from the list
 
   } catch (err) {
     console.error('Failed to complete order:', err);
     alert('Error al completar el pedido.');
     if (btn) {
-      btn.textContent = '✅ Marcar Completado';
+      btn.textContent = '✅ Completar';
       btn.disabled = false;
     }
   }
 }
 
+// ══════════════════════════════════════════════
+//  TICKET
+// ══════════════════════════════════════════════
+function showTicket(order) {
+  const fee = order.delivery_fee || 0;
+  const grandTotal = order.total + fee;
+  const timeStr = formatTime(order.created_at);
+  const dateStr = new Date(order.created_at).toLocaleDateString('es-MX');
+
+  const itemLines = order.display_text.split('\n').map(line =>
+    `<div class="ticket-line">${line}</div>`
+  ).join('');
+
+  ticketBody.innerHTML = `
+    <div class="ticket">
+      <div class="ticket-header">
+        <strong style="font-size: 20px;">Joselo's Pizza</strong><br>
+        ¡Nuestra especialidad es la calidad!
+      </div>
+      <div class="ticket-divider">─────────────────────────</div>
+      <div class="ticket-info">
+        Pedido #${order.id}<br>
+        ${dateStr} — ${timeStr}
+      </div>
+      ${order.client_name
+        ? `<div class="ticket-info">👤 ${order.client_name}</div>` : ''}
+      ${order.client_phone
+        ? '<div class="ticket-info">📞 ' + order.client_phone + '</div>' : ''}
+      ${order.delivery_address
+        ? `<div class="ticket-info">📍 ${order.delivery_address}</div>` : ''}
+      <div class="ticket-divider">─────────────────────────</div>
+      ${itemLines}
+      <div class="ticket-divider">─────────────────────────</div>
+      ${fee > 0
+        ? `<div class="ticket-line">Envío — ${peso(fee)}</div>` : ''}
+      <div class="ticket-total">TOTAL: ${peso(grandTotal)}</div>
+      <div class="ticket-divider">─────────────────────────</div>
+      <div class="ticket-footer">¡Gracias por su preferencia!</div>
+    </div>
+  `;
+
+  ticketModal.classList.remove('hidden');
+}
+
+document.getElementById('ticket-print').addEventListener('click', () => {
+  const printWindow = window.open('', '_blank', 'width=220,height=600');
+  printWindow.document.write(`
+    <html><head><style>
+      body { font-family: monospace; font-size: 10px; width: 160px; margin: 0 auto; }
+      .ticket-header { text-align: center; margin-bottom: 8px; }
+      .ticket-divider { color: #999; }
+      .ticket-total { font-weight: bold; font-size: 14px; margin: 4px 0; }
+      .ticket-footer { text-align: center; margin-top: 8px; }
+      .ticket-info, .ticket-line { margin: 2px 0; }
+    </style></head><body>
+      ${ticketBody.innerHTML}
+      <script>window.print(); window.close();<\/script>
+    </body></html>
+  `);
+});
+
+document.getElementById('ticket-close').addEventListener('click', () => {
+  ticketModal.classList.add('hidden');
+});
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
 function formatTime(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(dateString).toLocaleTimeString('es-MX', {
+    hour: '2-digit', minute: '2-digit'
   });
 }
 
+// ══════════════════════════════════════════════
+//  DAY SUMMARY + HISTORY + WEEKLY
+// ══════════════════════════════════════════════
+document.getElementById('btn-summary').addEventListener('click', () => {
+  document.querySelectorAll('.summary-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.summary-tab[data-view="today"]').classList.add('active');
+  summaryModal.classList.remove('hidden');
+  loadSummaryView('today');
+});
 
-// ══════════════════════════════════════════════
-//  DAY SUMMARY
-// ══════════════════════════════════════════════
-document.getElementById('btn-summary').addEventListener('click', async () => {
+document.querySelectorAll('.summary-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.summary-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadSummaryView(tab.dataset.view);
+  });
+});
+
+async function loadSummaryView(view) {
   try {
-    const response = await fetch('/api/orders/summary/today');
-    const data = await response.json();
+    if (view === 'today') {
+      const res = await fetch('/api/orders/summary/today');
+      const data = await res.json();
+      summaryContent.innerHTML = `
+        <div class="summary-stats">
+          <div class="stat-card">
+            <div class="stat-value">${data.total_orders}</div>
+            <div class="stat-label">Pedidos Totales</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${peso(data.total_sales)}</div>
+            <div class="stat-label">Venta Total</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${data.completed}</div>
+            <div class="stat-label">Completados</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${data.pending}</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+          <div class="stat-card stat-cancelled">
+            <div class="stat-value">${data.cancelled}</div>
+            <div class="stat-label">Cancelados</div>
+          </div>
+        </div>
+      `;
 
-    summaryContent.innerHTML = `
-      <div class="summary-stats">
-        <div class="stat-card">
-          <div class="stat-value">${data.total_orders}</div>
-          <div class="stat-label">Pedidos Totales</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">
-$$
-{data.total_sales}</div>
-          <div class="stat-label">Venta Total</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${data.completed}</div>
-          <div class="stat-label">Completados</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${data.pending}</div>
-          <div class="stat-label">Pendientes</div>
-        </div>
-      </div>
-    `;
+    } else if (view === 'history') {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch('/api/orders/history/' + today);
+      const orders = await res.json();
 
-    summaryModal.classList.remove('hidden');
+      if (orders.length === 0) {
+        summaryContent.innerHTML = '<p class="empty-cart">No hay pedidos completados hoy.</p>';
+        return;
+      }
 
+      summaryContent.innerHTML = orders.map(order => {
+        const fee = order.delivery_fee || 0;
+        const grand = order.total + fee;
+        const time = formatTime(order.created_at);
+        return `
+          <div class="history-card">
+            <div class="history-header">
+              <strong>#${order.id} — ${time}</strong>
+              <span>${peso(grand)}</span>
+            </div>
+            <div class="history-items">${order.display_text.replace(/\n/g, '<br>')}</div>
+            ${order.client_name ? '<div class="history-detail">👤 ' + order.client_name + '</div>' : ''}
+            ${order.client_phone ? '<div class="history-detail">📞 ' + order.client_phone + '</div>' : ''}
+            ${order.delivery_address ? '<div class="history-detail">📍 ' + order.delivery_address + '</div>' : ''}
+            ${fee > 0 ? '<div class="history-detail">🚗 Envío: ' + peso(fee) + '</div>' : ''}
+          </div>
+        `;
+      }).join('');
+
+    } else if (view === 'week') {
+      const res = await fetch('/api/orders/summary/week/current');
+      const days = await res.json();
+
+      if (days.length === 0) {
+        summaryContent.innerHTML = '<p class="empty-cart">No hay datos esta semana.</p>';
+        return;
+      }
+
+      const weekTotal = days.reduce((s, d) => s + d.total_sales, 0);
+      const weekOrders = days.reduce((s, d) => s + d.total_orders, 0);
+
+      summaryContent.innerHTML = `
+        <div class="week-totals">
+          <strong>Semana:</strong> ${weekOrders} pedidos · ${peso(weekTotal)}
+        </div>
+        <table class="week-table">
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Pedidos</th><th>Venta</th><th>Cancelados</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${days.map(d => `
+              <tr>
+                <td>${d.date}</td>
+                <td>${d.total_orders}</td>
+                <td>${peso(d.total_sales)}</td>
+                <td>${d.cancelled}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
   } catch (err) {
     console.error('Failed to load summary:', err);
-    alert('Error al cargar el resumen.');
+    summaryContent.innerHTML = '<p class="empty-cart">Error al cargar datos.</p>';
   }
-});
+}
 
 document.getElementById('summary-close').addEventListener('click', () => {
   summaryModal.classList.add('hidden');
 });
 
-
 // ══════════════════════════════════════════════
 //  SOCKET EVENTS
 // ══════════════════════════════════════════════
-
-// On connect, receive all pending orders
 socket.on('orders:all', (orders) => {
   activeOrders = orders;
   renderActiveOrders();
-  console.log(`📋 Loaded ${orders.length} active orders`);
 });
 
-// New order created (could be from this client or another)
 socket.on('order:new', (order) => {
-  // Avoid duplicates
   if (!activeOrders.find(o => o.id === order.id)) {
     activeOrders.push(order);
     renderActiveOrders();
   }
 });
 
-// Order completed
+socket.on('order:updated', (updated) => {
+  delete updated.kitchen_changed;
+  const idx = activeOrders.findIndex(o => o.id === updated.id);
+  if (idx !== -1) {
+    activeOrders[idx] = updated;
+  } else {
+    activeOrders.push(updated);
+  }
+  renderActiveOrders();
+});
+
 socket.on('order:completed', ({ id }) => {
   const card = document.getElementById(`active-order-${id}`);
   if (card) {
@@ -476,18 +825,68 @@ socket.on('order:completed', ({ id }) => {
   }
 });
 
-// Connection status
-socket.on('connect', () => {
-  console.log('🟢 Connected to server');
+socket.on('order:cancelled', ({ id }) => {
+  activeOrders = activeOrders.filter(o => o.id !== id);
+  renderActiveOrders();
 });
 
-socket.on('disconnect', () => {
-  console.log('🔴 Disconnected from server');
+socket.on('connect', () => console.log('🟢 Connected'));
+socket.on('disconnect', () => console.log('🔴 Disconnected'));
+
+// ══════════════════════════════════════════════
+//  ADMIN — MENU EDITOR
+// ══════════════════════════════════════════════
+const adminModal = document.getElementById('admin-modal');
+const menuEditor = document.getElementById('menu-editor');
+
+document.getElementById('btn-admin').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/menu');
+    const data = await res.json();
+    menuEditor.value = data.content;
+    adminModal.classList.remove('hidden');
+  } catch (err) {
+    alert('Error al cargar el menú.');
+  }
 });
 
+document.getElementById('admin-cancel').addEventListener('click', () => {
+  adminModal.classList.add('hidden');
+});
+
+document.getElementById('admin-save').addEventListener('click', async () => {
+  const content = menuEditor.value;
+
+  // Basic syntax check — try to evaluate it
+  try {
+    new Function(content + '\n; return MENU;')();
+  } catch (err) {
+    if (!confirm('⚠️ Posible error de sintaxis:\n' + err.message + '\n\n¿Guardar de todos modos?')) {
+      return;
+    }
+  }
+
+  try {
+    const res = await fetch('/api/menu', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+
+    if (!res.ok) throw new Error();
+
+    alert('✅ Menú guardado. La página se recargará.');
+    adminModal.classList.add('hidden');
+    location.reload();
+
+  } catch (err) {
+    alert('Error al guardar el menú.');
+  }
+});
 
 // ══════════════════════════════════════════════
 //  INITIALIZATION
 // ══════════════════════════════════════════════
 renderMenu();
 renderCart();
+updateBuilderMode();

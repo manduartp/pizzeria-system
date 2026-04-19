@@ -10,7 +10,7 @@
 
   <!-- TOP NAV -->
   <header>
-    <h1>🍕 Pizzería — Recepción</h1>
+    <h1>🍕 Joselo's Pizza — Recepción</h1>
     <div class="header-actions">
       <button id="btn-summary" class="btn-header">📊 Resumen del Día</button>
     </div>
@@ -20,7 +20,7 @@
 
     <!-- LEFT PANEL: ORDER BUILDER -->
     <section class="order-builder">
-      <h2>Nuevo Pedido</h2>
+      <h2 id="builder-title">Nuevo Pedido</h2>
 
       <!-- Category Tabs -->
       <div class="category-tabs">
@@ -39,7 +39,12 @@
           <h3 id="modal-pizza-name"></h3>
           <p id="modal-pizza-price" class="modal-price"></p>
 
-          <!-- Modifiers -->
+          <div id="custom-price-section" class="custom-price-section hidden">
+            <label for="custom-price">Precio:</label>
+            <input type="number" id="custom-price" min="0" step="10" 
+                   placeholder="0" class="input-field input-short">
+          </div>
+
           <div class="modifier-section">
             <label class="checkbox-label">
               <input type="checkbox" id="mod-orilla">
@@ -47,21 +52,19 @@
             </label>
           </div>
 
-          <!-- Extra Ingredients -->
           <div class="extras-section">
             <h4>Ingredientes Extra (+\$30 c/u)</h4>
             <div id="extras-grid" class="extras-grid"></div>
           </div>
 
-          <!-- Quantity -->
           <div class="quantity-section">
             <button id="qty-minus" class="btn-qty">−</button>
             <span id="qty-value">1</span>
             <button id="qty-plus" class="btn-qty">+</button>
           </div>
 
-          <!-- Notes for this item -->
-          <input type="text" id="item-notes" placeholder="Notas (ej: bien cocida)" class="input-notes">
+          <input type="text" id="item-notes" placeholder="Notas (ej: bien cocida)"
+                 class="input-notes">
 
           <div class="modal-actions">
             <button id="modal-cancel" class="btn-cancel">Cancelar</button>
@@ -72,8 +75,21 @@
 
       <!-- Order Details -->
       <div class="order-details">
-        <input type="text" id="delivery-address" placeholder="📍 Dirección de entrega" class="input-address">
-        <input type="text" id="order-notes" placeholder="📝 Notas generales del pedido" class="input-address">
+        <input type="text" id="client-name"
+               placeholder="👤 Nombre del cliente" class="input-field">
+        <input type="tel" id="client-phone"
+               placeholder="📞 Número del cliente" class="input-field">
+        <input type="text" id="delivery-address"
+               placeholder="📍 Dirección de entrega" class="input-field">
+        <div class="delivery-fee-row">
+          <label for="delivery-fee">🚗 Envío:</label>
+          <input type="number" id="delivery-fee"
+                 placeholder="0" min="0" step="10"
+                 inputmode="numeric" pattern="[0-9]*"
+                 class="input-field input-short">
+        </div>
+        <input type="text" id="order-notes"
+               placeholder="📝 Notas generales del pedido" class="input-field">
       </div>
 
     </section>
@@ -83,16 +99,19 @@
 
       <!-- Current Order Being Built -->
       <div class="current-order">
-        <h3>Pedido Actual</h3>
+        <h3 id="cart-title">Pedido Actual</h3>
         <div id="current-items" class="current-items">
           <p class="empty-cart">Agrega productos del menú</p>
         </div>
         <div class="order-total">
-          <span>Total:</span>
+          <span>Subtotal:</span>
           <span id="order-total">\$0</span>
         </div>
         <button id="btn-send-order" class="btn-send" disabled>
           Enviar a Cocina 🔥
+        </button>
+        <button id="btn-cancel-edit" class="btn-cancel-edit hidden">
+          ✕ Cancelar Edición
         </button>
       </div>
 
@@ -108,10 +127,42 @@
 
   <!-- Summary Modal -->
   <div id="summary-modal" class="modal hidden">
-    <div class="modal-content">
-      <h3>📊 Resumen del Día</h3>
+    <div class="modal-content modal-wide">
+      <div class="summary-tabs">
+        <button class="summary-tab active" data-view="today">📊 Hoy</button>
+        <button class="summary-tab" data-view="history">📋 Pedidos del Día</button>
+        <button class="summary-tab" data-view="week">📅 Semana</button>
+      </div>
       <div id="summary-content"></div>
       <button id="summary-close" class="btn-cancel">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Ticket Modal -->
+  <div id="ticket-modal" class="modal hidden">
+    <div class="modal-content ticket-content">
+      <div id="ticket-body"></div>
+      <div class="modal-actions">
+        <button id="ticket-print" class="btn-add">🖨️ Imprimir</button>
+        <button id="ticket-close" class="btn-cancel">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Button -->
+  <button id="btn-admin" class="btn-admin">⚙️</button>
+
+  <!-- Admin Modal -->
+  <div id="admin-modal" class="modal hidden">
+    <div class="modal-content modal-admin">
+      <h3>⚙️ Editar Menú</h3>
+      <p class="admin-hint">Edita directamente el archivo menu.js. 
+         Cuidado con la sintaxis — comas, comillas y corchetes importan.</p>
+      <textarea id="menu-editor" class="menu-editor" spellcheck="false"></textarea>
+      <div class="modal-actions">
+        <button id="admin-cancel" class="btn-cancel">Cancelar</button>
+        <button id="admin-save" class="btn-add">💾 Guardar y Recargar</button>
+      </div>
     </div>
   </div>
 

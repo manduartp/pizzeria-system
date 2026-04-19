@@ -6,6 +6,7 @@ const MENU = {
     { id: '4_estaciones', name: '4 Estaciones', price: 170 },
     { id: 'bolognesa', name: 'Bolognesa', price: 240 },
     { id: 'surtida', name: 'Surtida', price: 300 },
+    { id: 'personalizada', name: 'Personalizada', price: 0 },
   ],
 
   modifiers: [
@@ -23,10 +24,13 @@ const MENU = {
   sides: [
     { id: 'pan_ajo', name: 'Pan con Ajo Sencillo', price: 30 },
     { id: 'pan_ajo_queso', name: 'Pan con Ajo y Queso', price: 50 },
+    { id: 'pan_ajo_queso_promo', name: 'Promo Pan con Ajo y Queso', price: 0 },
   ],
 
   beverages: [
     { id: 'te_litro', name: 'Té de Litro', price: 30 },
+    { id: 'refresco', name: 'Refresco', price: 30 },
+    { id: 'refresco_promo', name: 'Promo Refresco', price: 0 },
   ],
 
   specials: [

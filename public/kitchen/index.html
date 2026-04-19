@@ -7,18 +7,28 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
   <header>
     <h1>🍕 Pedidos en Cola</h1>
-    <div id="order-count">0 pedidos</div>
+    <div class="header-right">
+      <span id="clock"></span>
+      <span id="order-count">0 pedidos</span>
+    </div>
   </header>
 
+  <!-- Column headers -->
+  <div class="table-header">
+    <span class="col-num">#</span>
+    <span class="col-time">HORA</span>
+    <span class="col-order">PEDIDO</span>
+  </div>
+
+  <!-- Order rows go here -->
   <main id="orders-container">
     <p class="empty-message">Sin pedidos pendientes — ¡todo tranquilo!</p>
   </main>
 
-  <!-- Socket.io is served automatically by the server -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/shared/menu.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

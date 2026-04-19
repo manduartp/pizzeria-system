@@ -1,161 +1,141 @@
-// ── CONNECT TO SERVER ──
 const socket = io();
-
-// ── DOM ELEMENTS ──
 const container = document.getElementById('orders-container');
 const orderCountEl = document.getElementById('order-count');
+const clockEl = document.getElementById('clock');
 
-// ── STATE ──
 let orders = [];
-let audioEnabled = false;
+let completedToday = 0;
 
-// ── AUDIO SETUP ──
-// Browsers require a user gesture before playing audio.
-// First click/tap anywhere enables notification sounds.
-document.addEventListener('click', () => {
-  if (!audioEnabled) {
-    audioEnabled = true;
-    console.log('🔊 Audio enabled');
-  }
-}, { once: true });
+// ── CLOCK ──
+function updateClock() {
+  clockEl.textContent = new Date().toLocaleTimeString('es-MX', {
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-function playNotificationSound() {
-  if (!audioEnabled) return;
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-    oscillator.frequency.value = 830;
-    oscillator.type = 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.5);
-  } catch (e) {
-    // Audio not available, no problem
-  }
+// ── SCREEN FLASH (no click needed, unlike audio) ──
+function flashScreen() {
+  const flash = document.createElement('div');
+  flash.className = 'screen-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 2000);
 }
 
 // ── HELPERS ──
 function formatTime(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(dateString).toLocaleTimeString('es-MX', {
+    hour: '2-digit', minute: '2-digit'
   });
 }
 
-// ── RENDER ──
-function createOrderCard(order) {
-  const itemsHtml = order.items.map(item => {
-    let detailsHtml = '';
-
-    // Show modifiers like Orilla de Queso
-    if (item.modifiers && item.modifiers.length > 0) {
-      detailsHtml += `<div class="item-details">+ ${item.modifiers.join(', ')}</div>`;
-    }
-
-    // Show extra ingredients
-    if (item.extras && item.extras.length > 0) {
-      detailsHtml += `<div class="item-details">+ ${item.extras.join(', ')}</div>`;
-    }
-
-    return `
-      <div class="order-item">
-        <span class="quantity">${item.quantity}x</span>
-        <span class="item-name">${item.name}</span>
-      </div>
-      ${detailsHtml}
-    `;
-  }).join('');
-
-  const notesHtml = order.notes
-    ? `<div class="order-notes">${order.notes}</div>`
-    : '';
-
-  const addressHtml = order.delivery_address
-    ? `<div class="order-address">${order.delivery_address}</div>`
-    : '';
-
-  return `
-    <div class="order-card" id="order-${order.id}">
-      <div class="order-header">
-        <span class="order-number">#${order.id}</span>
-        <span class="order-time">${formatTime(order.created_at)}</span>
-      </div>
-      ${itemsHtml}
-      ${notesHtml}
-      ${addressHtml}
-    </div>
-  `;
+function updateCounter() {
+  const pending = orders.filter(o => !o._cancelled).length;
+  orderCountEl.textContent = pending + ' pendiente' 
+    + (pending !== 1 ? 's' : '') 
+    + ' · ' + completedToday + ' completado' 
+    + (completedToday !== 1 ? 's' : '');
 }
 
+// ── FETCH COMPLETED COUNT ──
+async function fetchCompletedCount() {
+  try {
+    const res = await fetch('/api/orders/summary/today');
+    const data = await res.json();
+    completedToday = data.completed || 0;
+    updateCounter();
+  } catch (e) { /* silent */ }
+}
+
+// ── RENDER ──
 function renderOrders() {
   if (orders.length === 0) {
     container.innerHTML =
       '<p class="empty-message">Sin pedidos pendientes — ¡todo tranquilo!</p>';
   } else {
-    container.innerHTML = orders.map(createOrderCard).join('');
-  }
+    container.innerHTML = orders.map(order => {
+      const modified = order.modified_at && !order._cancelled
+        ? '<span class="modified-label">(Modificado) </span>' : '';
+      const cancelled = order._cancelled;
+      const rowClass = cancelled ? 'order-row cancelled' 
+        : order.modified_at ? 'order-row was-modified' : 'order-row';
 
-  const count = orders.length;
-  orderCountEl.textContent = `${count} pedido${count !== 1 ? 's' : ''}`;
+      return `
+        <div class="${rowClass}" id="order-${order.id}">
+          <span class="col-num">${order.id}</span>
+          <span class="col-time">${formatTime(order.created_at)}</span>
+          <span class="col-order">
+            ${cancelled 
+              ? '<span class="cancelled-label">CANCELADO — </span><span class="order-text strikethrough">' + order.kitchen_text + '</span>'
+              : '<span class="order-text">' + modified + order.kitchen_text + '</span>'
+            }
+          </span>
+        </div>
+      `;
+    }).join('');
+  }
+  updateCounter();
 }
 
 // ── SOCKET EVENTS ──
-
-// Receive all pending orders on connect
 socket.on('orders:all', (allOrders) => {
   orders = allOrders;
   renderOrders();
-  console.log(`📋 Loaded ${orders.length} pending orders`);
+  fetchCompletedCount();
 });
 
-// New order comes in
 socket.on('order:new', (order) => {
-  orders.push(order);
-  renderOrders();
-  playNotificationSound();
-  console.log(`🆕 New order #${order.id}`);
+  if (!orders.find(o => o.id === order.id)) {
+    orders.push(order);
+    renderOrders();
+    flashScreen();
+  }
 });
 
-// Order completed, remove from display
+socket.on('order:updated', (updated) => {
+  const kitchenChanged = updated.kitchen_changed;
+  delete updated.kitchen_changed;
+
+  const idx = orders.findIndex(o => o.id === updated.id);
+  if (idx !== -1) {
+    orders[idx] = updated;
+    renderOrders();
+    if (kitchenChanged) flashScreen();
+  }
+});
+
 socket.on('order:completed', ({ id }) => {
-  const card = document.getElementById(`order-${id}`);
-  if (card) {
-    card.classList.add('completing');
+  orders = orders.filter(o => o.id !== id);
+  completedToday++;
+  renderOrders();
+});
+
+socket.on('order:cancelled', ({ id }) => {
+  const idx = orders.findIndex(o => o.id === id);
+  if (idx !== -1) {
+    orders[idx]._cancelled = true;
+    renderOrders();
+    flashScreen();
     setTimeout(() => {
       orders = orders.filter(o => o.id !== id);
       renderOrders();
-    }, 500); // Wait for fade-out animation
-  } else {
-    orders = orders.filter(o => o.id !== id);
-    renderOrders();
+    }, 60000);
   }
-  console.log(`✅ Order #${id} completed`);
 });
 
 // ── CONNECTION STATUS ──
-function createStatusIndicator() {
-  const el = document.createElement('div');
-  el.className = 'connection-status connected';
-  el.textContent = '🟢 Conectado';
-  document.body.appendChild(el);
-  return el;
-}
-
-const statusEl = createStatusIndicator();
+const statusEl = document.createElement('div');
+statusEl.className = 'connection-status connected';
+statusEl.textContent = '🟢 Conectado';
+document.body.appendChild(statusEl);
 
 socket.on('connect', () => {
   statusEl.className = 'connection-status connected';
   statusEl.textContent = '🟢 Conectado';
-  console.log('Connected to server');
 });
 
 socket.on('disconnect', () => {
   statusEl.className = 'connection-status disconnected';
   statusEl.textContent = '🔴 Desconectado';
-  console.log('Disconnected from server');
 });

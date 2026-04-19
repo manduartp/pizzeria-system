@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 const db = require('./database');
 
 const app = express();
@@ -19,6 +20,32 @@ app.use('/receptionist', express.static(path.join(__dirname, '..', 'public', 're
 // Default redirect
 app.get('/', (req, res) => res.redirect('/receptionist'));
 
+// Menu API
+const menuPath = path.join(__dirname, '..', 'shared', 'menu.js');
+
+// Read menu file
+app.get('/api/menu', (req, res) => {
+  try {
+    const content = fs.readFileSync(menuPath, 'utf-8');
+    res.json({ content });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read menu' });
+  }
+});
+
+// Write menu file
+app.put('/api/menu', (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: 'No content' });
+    fs.writeFileSync(menuPath, content, 'utf-8');
+    console.log('📝 Menu updated from admin UI');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to write menu' });
+  }
+});
+
 // API routes
 const orderRoutes = require('./routes/orders');
 app.use('/api/orders', orderRoutes(io));
@@ -27,15 +54,11 @@ app.use('/api/orders', orderRoutes(io));
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
-  // Send all pending orders when a client connects
   const orders = db
     .prepare("SELECT * FROM orders WHERE status = 'pending' ORDER BY created_at ASC")
     .all();
 
-  orders.forEach(order => {
-    order.items = JSON.parse(order.items);
-  });
-
+  // No more JSON.parse — data is already plain strings
   socket.emit('orders:all', orders);
 
   socket.on('disconnect', () => {
