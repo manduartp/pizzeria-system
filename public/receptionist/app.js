@@ -624,6 +624,9 @@ function showTicket(order) {
       ${fee > 0
         ? `<div class="ticket-line">Envío — ${peso(fee)}</div>` : ''}
       <div class="ticket-total">TOTAL: ${peso(grandTotal)}</div>
+      ${order.notes
+        ? `<div class="ticket-divider">─────────────────────────</div>
+           <div class="ticket-notes">📝 ${order.notes}</div>` : ''}
       <div class="ticket-divider">─────────────────────────</div>
       <div class="ticket-footer">¡Gracias por su preferencia!</div>
     </div>
@@ -711,8 +714,7 @@ async function loadSummaryView(view) {
       `;
 
     } else if (view === 'history') {
-      const today = new Date().toISOString().split('T')[0];
-      const res = await fetch('/api/orders/history/' + today);
+      const res = await fetch('/api/orders/history/today');
       const orders = await res.json();
 
       if (orders.length === 0) {
@@ -725,7 +727,7 @@ async function loadSummaryView(view) {
         const grand = order.total + fee;
         const time = formatTime(order.created_at);
         return `
-          <div class="history-card">
+          <div class="history-card history-card-clickable" data-order-id="${order.id}">
             <div class="history-header">
               <strong>#${order.id} — ${time}</strong>
               <span>${peso(grand)}</span>
@@ -738,6 +740,16 @@ async function loadSummaryView(view) {
           </div>
         `;
       }).join('');
+
+      // Store orders for ticket lookup
+      summaryContent._orders = orders;
+
+      summaryContent.querySelectorAll('.history-card-clickable').forEach(card => {
+        card.addEventListener('click', () => {
+          const order = summaryContent._orders.find(o => o.id === parseInt(card.dataset.orderId));
+          if (order) showTicket(order);
+        });
+      });
 
     } else if (view === 'week') {
       const res = await fetch('/api/orders/summary/week/current');
@@ -763,7 +775,7 @@ async function loadSummaryView(view) {
           </thead>
           <tbody>
             ${days.map(d => `
-              <tr>
+              <tr class="week-row-clickable" data-date="${d.date}">
                 <td>${d.date}</td>
                 <td>${d.total_orders}</td>
                 <td>${peso(d.total_sales)}</td>
@@ -773,9 +785,69 @@ async function loadSummaryView(view) {
           </tbody>
         </table>
       `;
+
+      summaryContent.querySelectorAll('.week-row-clickable').forEach(row => {
+        row.addEventListener('click', () => {
+          loadDayDetail(row.dataset.date);
+        });
+      });
     }
   } catch (err) {
     console.error('Failed to load summary:', err);
+    summaryContent.innerHTML = '<p class="empty-cart">Error al cargar datos.</p>';
+  }
+}
+
+async function loadDayDetail(date) {
+  try {
+    const res = await fetch(`/api/orders/history/${date}`);
+    const orders = await res.json();
+
+    let html = `
+      <button class="btn-back-week">← Volver a Semana</button>
+      <h4 style="margin-bottom:12px;">Pedidos del ${date}</h4>
+    `;
+
+    if (orders.length === 0) {
+      html += '<p class="empty-cart">No hay pedidos completados este día.</p>';
+    } else {
+      html += orders.map(order => {
+        const fee = order.delivery_fee || 0;
+        const grand = order.total + fee;
+        const time = formatTime(order.created_at);
+        return `
+          <div class="history-card history-card-clickable" data-order-id="${order.id}">
+            <div class="history-header">
+              <strong>#${order.id} — ${time}</strong>
+              <span>${peso(grand)}</span>
+            </div>
+            <div class="history-items">${order.display_text.replace(/\n/g, '<br>')}</div>
+            ${order.client_name ? '<div class="history-detail">👤 ' + order.client_name + '</div>' : ''}
+            ${order.client_phone ? '<div class="history-detail">📞 ' + order.client_phone + '</div>' : ''}
+            ${order.delivery_address ? '<div class="history-detail">📍 ' + order.delivery_address + '</div>' : ''}
+            ${fee > 0 ? '<div class="history-detail">🚗 Envío: ' + peso(fee) + '</div>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    summaryContent.innerHTML = html;
+
+    summaryContent._dayOrders = orders;
+
+    summaryContent.querySelectorAll('.history-card-clickable').forEach(card => {
+      card.addEventListener('click', () => {
+        const order = summaryContent._dayOrders.find(o => o.id === parseInt(card.dataset.orderId));
+        if (order) showTicket(order);
+      });
+    });
+
+    summaryContent.querySelector('.btn-back-week').addEventListener('click', () => {
+      loadSummaryView('week');
+    });
+
+  } catch (err) {
+    console.error('Failed to load day detail:', err);
     summaryContent.innerHTML = '<p class="empty-cart">Error al cargar datos.</p>';
   }
 }
@@ -881,6 +953,18 @@ document.getElementById('admin-save').addEventListener('click', async () => {
 
   } catch (err) {
     alert('Error al guardar el menú.');
+  }
+});
+
+summaryModal.addEventListener('click', (e) => {
+  if (e.target === summaryModal) {
+    summaryModal.classList.add('hidden');
+  }
+});
+
+ticketModal.addEventListener('click', (e) => {
+  if (e.target === ticketModal) {
+    ticketModal.classList.add('hidden');
   }
 });
 

@@ -829,3 +829,46 @@ header h1 {
   outline: none;
   border-color: #555;
 }
+
+/* ── WEEK ROW CLICKABLE ── */
+.week-row-clickable {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.week-row-clickable:hover {
+  background: #fff3e0;
+}
+
+/* ── BACK BUTTON ── */
+.btn-back-week {
+  margin-bottom: 12px;
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-back-week:hover {
+  border-color: #d32f2f;
+  color: #d32f2f;
+}
+
+.ticket-notes {
+  margin: 4px 0;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.history-card-clickable {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.history-card-clickable:hover {
+  border-color: #d32f2f;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

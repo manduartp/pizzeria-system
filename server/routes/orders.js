@@ -189,6 +189,16 @@ module.exports = function (io) {
     res.json(summary);
   });
 
+  // ─── COMPLETED ORDERS TODAY ───
+  router.get('/history/today', (req, res) => {
+    const orders = db.prepare(`
+      SELECT * FROM orders 
+      WHERE DATE(created_at) = DATE('now','localtime') AND status = 'completed'
+      ORDER BY created_at ASC
+    `).all();
+    res.json(orders);
+  });
+
   // ─── COMPLETED ORDERS FOR A DATE ───
   router.get('/history/:date', (req, res) => {
     const orders = db.prepare(`
