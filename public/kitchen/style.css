@@ -79,8 +79,8 @@ header h1 {
 .order-row {
   display: flex;
   align-items: flex-start;
-  padding: 14px 24px;
-  font-size: 1.8rem;
+  padding: 10px 24px;
+  font-size: 1.6rem;
   font-weight: bold;
   border-bottom: 2px solid #0d1240;
   animation: fadeIn 0.3s ease;
@@ -97,7 +97,7 @@ header h1 {
 
 .order-row .col-num {
   color: #ffdd57;
-  font-size: 2rem;
+  font-size: 1.8rem;
   padding-top: 2px;
 }
 

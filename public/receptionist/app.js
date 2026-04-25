@@ -635,21 +635,296 @@ function showTicket(order) {
   ticketModal.classList.remove('hidden');
 }
 
-document.getElementById('ticket-print').addEventListener('click', () => {
-  const printWindow = window.open('', '_blank', 'width=220,height=600');
-  printWindow.document.write(`
-    <html><head><style>
-      body { font-family: monospace; font-size: 10px; width: 160px; margin: 0 auto; }
-      .ticket-header { text-align: center; margin-bottom: 8px; }
-      .ticket-divider { color: #999; }
-      .ticket-total { font-weight: bold; font-size: 14px; margin: 4px 0; }
-      .ticket-footer { text-align: center; margin-top: 8px; }
-      .ticket-info, .ticket-line { margin: 2px 0; }
-    </style></head><body>
-      ${ticketBody.innerHTML}
-      <script>window.print(); window.close();<\/script>
-    </body></html>
-  `);
+// ══════════════════════════════════════════════
+//  THERMAL PRINTER — ESC/POS + WebUSB
+// ══════════════════════════════════════════════
+
+// ESC/POS command constants
+const ESC = 0x1B;
+const GS  = 0x1D;
+const ESCPOS = {
+  INIT:        [ESC, 0x40],                // Initialize printer
+  CODEPAGE_1252: [ESC, 0x74, 0x10],        // Windows-1252 (Spanish chars)
+  CENTER:      [ESC, 0x61, 0x01],
+  LEFT:        [ESC, 0x61, 0x00],
+  RIGHT:       [ESC, 0x61, 0x02],
+  BOLD_ON:     [ESC, 0x45, 0x01],
+  BOLD_OFF:    [ESC, 0x45, 0x00],
+  DOUBLE:      [GS, 0x21, 0x11],           // Double width + height
+  WIDE:        [GS, 0x21, 0x10],           // Double width only
+  TALL:        [GS, 0x21, 0x01],           // Double height only
+  NORMAL:      [GS, 0x21, 0x00],           // Normal size
+  LF:          [0x0A],                      // Line feed
+  FEED:        [ESC, 0x64, 0x04],          // Feed 4 lines
+  CUT:         [GS, 0x56, 0x01],           // Partial cut
+};
+
+const LINE_WIDTH = 32; // characters per line on 58mm paper
+
+// Printer state
+let printerDevice = null;
+let printerEndpoint = null;
+
+// Convert string to Latin-1 bytes (supports Spanish characters)
+function textBytes(str) {
+  const bytes = [];
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    bytes.push(code < 256 ? code : 0x3F); // '?' for unsupported
+  }
+  return bytes;
+}
+
+// Helper: line of dashes
+function divider() {
+  return [...textBytes('-'.repeat(LINE_WIDTH)), ...ESCPOS.LF];
+}
+
+// Helper: text line with automatic word wrapping
+function textLine(str) {
+  const bytes = [];
+  const words = str.split(' ');
+  let currentLine = '';
+
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 > LINE_WIDTH) {
+      bytes.push(...textBytes(currentLine.trimEnd()));
+      bytes.push(...ESCPOS.LF);
+      currentLine = word + ' ';
+    } else {
+      currentLine += word + ' ';
+    }
+  }
+
+  if (currentLine.trim().length > 0) {
+    bytes.push(...textBytes(currentLine.trimEnd()));
+    bytes.push(...ESCPOS.LF);
+  }
+
+  return bytes;
+}
+
+// Build the full ESC/POS ticket for an order
+function buildTicketBytes(order) {
+  const fee = order.delivery_fee || 0;
+  const grandTotal = order.total + fee;
+  const timeStr = formatTime(order.created_at);
+  const dateStr = new Date(order.created_at).toLocaleDateString('es-MX');
+
+  let b = [];
+
+  // ── Initialize ──
+  b.push(...ESCPOS.INIT);
+  b.push(...ESCPOS.CODEPAGE_1252);
+
+  // ── Header ──
+  b.push(...ESCPOS.CENTER);
+  b.push(...ESCPOS.DOUBLE);
+  b.push(...ESCPOS.BOLD_ON);
+  b.push(...textBytes("Joselo's Pizza"));
+  b.push(...ESCPOS.LF);
+  b.push(...ESCPOS.NORMAL);
+  b.push(...ESCPOS.BOLD_OFF);
+  b.push(...textBytes("Nuestra especialidad"));
+  b.push(...ESCPOS.LF);
+  b.push(...textBytes("es la calidad!"));
+  b.push(...ESCPOS.LF);
+
+  // ── Order info ──
+  b.push(...divider());
+  b.push(...ESCPOS.BOLD_ON);
+  b.push(...textBytes(`Pedido #${order.id}`));
+  b.push(...ESCPOS.LF);
+  b.push(...ESCPOS.BOLD_OFF);
+  b.push(...textBytes(`${dateStr} - ${timeStr}`));
+  b.push(...ESCPOS.LF);
+
+  // ── Client info ──
+  b.push(...ESCPOS.LEFT);
+  if (order.client_name) {
+    b.push(...textLine(`Cliente: ${order.client_name}`));
+  }
+  if (order.client_phone) {
+    b.push(...textLine(`Tel: ${order.client_phone}`));
+  }
+  if (order.delivery_address) {
+    b.push(...textLine(`Dir: ${order.delivery_address}`));
+  }
+
+  // ── Items ──
+  b.push(...divider());
+  const items = order.display_text.split('\n');
+  for (const item of items) {
+    b.push(...textLine(item));
+  }
+
+  // ── Totals ──
+  b.push(...divider());
+  if (fee > 0) {
+    b.push(...textBytes(`Envio: 
+$$
+{fee}`));
+    b.push(...ESCPOS.LF);
+  }
+
+  b.push(...ESCPOS.CENTER);
+  b.push(...ESCPOS.DOUBLE);
+  b.push(...ESCPOS.BOLD_ON);
+  b.push(...textBytes(`TOTAL:
+$$
+{grandTotal}`));
+  b.push(...ESCPOS.LF);
+  b.push(...ESCPOS.NORMAL);
+  b.push(...ESCPOS.BOLD_OFF);
+
+  // ── Notes ──
+  if (order.notes) {
+    b.push(...ESCPOS.LEFT);
+    b.push(...divider());
+    b.push(...textLine(`Nota: ${order.notes}`));
+  }
+
+  // ── Footer ──
+  b.push(...ESCPOS.CENTER);
+  b.push(...divider());
+  b.push(...textBytes("Gracias por su preferencia!"));
+  b.push(...ESCPOS.LF);
+
+  // ── Feed and cut ──
+  b.push(...ESCPOS.FEED);
+  b.push(...ESCPOS.CUT);
+
+  return new Uint8Array(b);
+}
+
+// ── WebUSB Connection ──
+
+async function connectPrinter() {
+  try {
+    const device = await navigator.usb.requestDevice({
+      filters: [] // Show all USB devices so user can pick the printer
+    });
+
+    await device.open();
+
+    if (device.configuration === null) {
+      await device.selectConfiguration(1);
+    }
+
+    // Find the bulk OUT endpoint
+    let targetInterface = null;
+    let targetEndpoint = null;
+
+    for (const iface of device.configuration.interfaces) {
+      for (const ep of iface.alternate.endpoints) {
+        if (ep.direction === 'out' && ep.type === 'bulk') {
+          targetInterface = iface.interfaceNumber;
+          targetEndpoint = ep.endpointNumber;
+          break;
+        }
+      }
+      if (targetEndpoint !== null) break;
+    }
+
+    if (targetEndpoint === null) {
+      throw new Error('No se encontro un endpoint de impresion');
+    }
+
+    await device.claimInterface(targetInterface);
+
+    printerDevice = device;
+    printerEndpoint = targetEndpoint;
+    updatePrinterStatus(true);
+
+    console.log('🖨️ Printer connected:', device.productName);
+
+  } catch (err) {
+    console.error('Printer connection failed:', err);
+    if (err.name !== 'NotFoundError') {
+      alert('Error al conectar impresora: ' + err.message);
+    }
+  }
+}
+
+async function disconnectPrinter() {
+  if (printerDevice) {
+    try {
+      await printerDevice.close();
+    } catch (e) { /* ignore */ }
+    printerDevice = null;
+    printerEndpoint = null;
+    updatePrinterStatus(false);
+    console.log('🖨️ Printer disconnected');
+  }
+}
+
+async function sendToPrinter(data) {
+  if (!printerDevice || printerEndpoint === null) {
+    alert('Impresora no conectada. Haz clic en "Conectar Impresora".');
+    return false;
+  }
+
+  try {
+    await printerDevice.transferOut(printerEndpoint, data);
+    return true;
+  } catch (err) {
+    console.error('Print failed:', err);
+    alert('Error al imprimir. Intenta reconectar la impresora.');
+    printerDevice = null;
+    printerEndpoint = null;
+    updatePrinterStatus(false);
+    return false;
+  }
+}
+
+function updatePrinterStatus(connected) {
+  const statusEl = document.getElementById('printer-status');
+  const btnEl = document.getElementById('btn-connect-printer');
+
+  if (connected) {
+    statusEl.textContent = '● Conectada';
+    statusEl.className = 'printer-status connected';
+    btnEl.textContent = '⏏️ Desconectar Impresora';
+  } else {
+    statusEl.textContent = '● Desconectada';
+    statusEl.className = 'printer-status disconnected';
+    btnEl.textContent = '🔌 Conectar Impresora';
+  }
+}
+
+// ── Button handlers ──
+
+document.getElementById('btn-connect-printer').addEventListener('click', () => {
+  if (printerDevice) {
+    disconnectPrinter();
+  } else {
+    connectPrinter();
+  }
+});
+
+// This replaces the old ticket-print handler
+document.getElementById('ticket-print').addEventListener('click', async () => {
+  // Find the order that's currently showing in the ticket modal
+  const orderIdMatch = ticketBody.innerHTML.match(/Pedido #(\d+)/);
+  if (!orderIdMatch) return;
+
+  const orderId = parseInt(orderIdMatch[1]);
+  const order = activeOrders.find(o => o.id === orderId);
+
+  if (!order) {
+    // Try fetching from the displayed ticket data as fallback
+    alert('No se encontro el pedido en ordenes activas.');
+    return;
+  }
+
+  const ticketData = buildTicketBytes(order);
+  const success = await sendToPrinter(ticketData);
+
+  if (success) {
+    const btn = document.getElementById('ticket-print');
+    btn.textContent = '✅ Impreso';
+    setTimeout(() => { btn.textContent = '🖨️ Imprimir'; }, 1500);
+  }
 });
 
 document.getElementById('ticket-close').addEventListener('click', () => {
