@@ -735,13 +735,14 @@ function buildTicketBytes(order) {
   b.push(...ESCPOS.LF);
 
   // ── Order info ──
-  b.push(...divider());
-  b.push(...ESCPOS.BOLD_ON);
-  b.push(...textBytes(`Pedido #${order.id}`));
-  b.push(...ESCPOS.LF);
-  b.push(...ESCPOS.BOLD_OFF);
-  b.push(...textBytes(`${dateStr} - ${timeStr}`));
-  b.push(...ESCPOS.LF);
+b.push(...ESCPOS.DOUBLE);
+b.push(...ESCPOS.BOLD_ON);
+b.push(...textBytes(`Pedido #${order.id}`));
+b.push(...ESCPOS.LF);
+b.push(...ESCPOS.NORMAL);
+b.push(...ESCPOS.BOLD_OFF);
+b.push(...textBytes(`${dateStr} - ${timeStr}`));
+b.push(...ESCPOS.LF);
 
   // ── Client info ──
   b.push(...ESCPOS.LEFT);
