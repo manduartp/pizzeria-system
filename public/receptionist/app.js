@@ -667,10 +667,14 @@ let printerEndpoint = null;
 
 // Convert string to Latin-1 bytes (supports Spanish characters)
 function textBytes(str) {
+  // Replace special Unicode characters with printer-safe equivalents
+  str = str.replace(/\u2014/g, '-');  // em dash → hyphen
+  str = str.replace(/\u2013/g, '-');  // en dash → hyphen
+
   const bytes = [];
   for (let i = 0; i < str.length; i++) {
     const code = str.charCodeAt(i);
-    bytes.push(code < 256 ? code : 0x3F); // '?' for unsupported
+    bytes.push(code < 256 ? code : 0x3F);
   }
   return bytes;
 }
@@ -761,18 +765,14 @@ function buildTicketBytes(order) {
   // ── Totals ──
   b.push(...divider());
   if (fee > 0) {
-    b.push(...textBytes(`Envio: 
-$$
-{fee}`));
+    b.push(...textBytes(`Envio: ${peso(fee)}`));
     b.push(...ESCPOS.LF);
   }
 
   b.push(...ESCPOS.CENTER);
   b.push(...ESCPOS.DOUBLE);
   b.push(...ESCPOS.BOLD_ON);
-  b.push(...textBytes(`TOTAL:
-$$
-{grandTotal}`));
+  b.push(...textBytes(`TOTAL: ${peso(grandTotal)}`));
   b.push(...ESCPOS.LF);
   b.push(...ESCPOS.NORMAL);
   b.push(...ESCPOS.BOLD_OFF);
