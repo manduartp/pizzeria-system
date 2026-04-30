@@ -2,9 +2,19 @@ const socket = io();
 const container = document.getElementById('orders-container');
 const orderCountEl = document.getElementById('order-count');
 const clockEl = document.getElementById('clock');
+const notificationSound = document.getElementById('notification-sound');
 
 let orders = [];
 let completedToday = 0;
+
+// ── NOTIFICATION SOUND ──
+function playNotification() {
+  // Rewind in case it's mid-play from a previous order
+  try {
+    notificationSound.currentTime = 0;
+    notificationSound.play().catch(() => {});
+  } catch (e) {}
+}
 
 // ── KEEP SCREEN AWAKE ──
 // Layer 1: Wake Lock API (clean, no DOM)
@@ -142,6 +152,7 @@ socket.on('order:new', (order) => {
   if (!orders.find(o => o.id === order.id)) {
     orders.push(order);
     renderOrders();
+    playNotification()
     flashScreen();
   }
 });
@@ -154,7 +165,10 @@ socket.on('order:updated', (updated) => {
   if (idx !== -1) {
     orders[idx] = updated;
     renderOrders();
-    if (kitchenChanged) flashScreen();
+    if (kitchenChanged) {
+      playNotification()
+      flashScreen();
+    }
   }
 });
 
@@ -169,6 +183,7 @@ socket.on('order:cancelled', ({ id }) => {
   if (idx !== -1) {
     orders[idx]._cancelled = true;
     renderOrders();
+    playNotification()
     flashScreen();
     setTimeout(() => {
       orders = orders.filter(o => o.id !== id);
