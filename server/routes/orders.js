@@ -155,14 +155,6 @@ module.exports = function (io) {
   });
 
   // ─── SUMMARIES ───
-  const summarySQL = `
-    SELECT COUNT(*) as total_orders,
-      COALESCE(SUM(total + delivery_fee), 0) as total_sales,
-      COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-      COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
-    FROM orders WHERE DATE(created_at) = ?`;
-
-  // ─── SUMMARIES ───
   router.get('/summary/today', (req, res) => {
     const summary = db.prepare(`
       SELECT 

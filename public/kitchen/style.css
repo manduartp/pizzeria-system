@@ -175,13 +175,6 @@ header h1 {
   100% { opacity: 0; }
 }
 
-/* ── COMPLETING ANIMATION ── */
-.order-row.completing {
-  opacity: 0;
-  transform: translateX(100%);
-  transition: all 0.5s ease;
-}
-
 /* ── EMPTY STATE ── */
 .empty-message {
   text-align: center;

@@ -17,7 +17,7 @@ function playNotification() {
 }
 
 // ── KEEP SCREEN AWAKE ──
-// Layer 1: Wake Lock API (clean, no DOM)
+// Wake Lock API (clean, no DOM)
 let wakeLock = null;
 
 async function requestWakeLock() {
@@ -29,45 +29,13 @@ async function requestWakeLock() {
         setTimeout(requestWakeLock, 1000);
       });
     }
-  } catch (e) { /* silent — fallback video handles it */ }
+  } catch (e) { /* silent */ }
 }
 
 requestWakeLock();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') requestWakeLock();
 });
-
-// Layer 2: Silent video fallback (for devices that ignore Wake Lock)
-(function initSilentVideo() {
-  const video = document.createElement('video');
-  video.src = 'silent.mp4';
-  video.loop = true;
-  video.muted = true;
-  video.playsInline = true;
-  video.setAttribute('playsinline', '');
-
-  // Completely invisible, no layout impact
-  video.style.cssText = `
-    position: fixed;
-    top: 0; left: 0;
-    width: 1px; height: 1px;
-    opacity: 0;
-    pointer-events: none;
-    z-index: -1;
-  `;
-
-  document.body.appendChild(video);
-
-  // Autoplay may be blocked — retry on any user interaction
-  const tryPlay = () => {
-    video.play().catch(() => {});
-  };
-
-  tryPlay();
-  document.addEventListener('click', tryPlay, { once: true });
-  document.addEventListener('touchstart', tryPlay, { once: true });
-  document.addEventListener('keydown', tryPlay, { once: true });
-})();
 
 // ── CLOCK ──
 function updateClock() {

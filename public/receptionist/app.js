@@ -8,6 +8,7 @@ let currentCategory = 'pizzas';
 let modalData = null;
 let selectedExtras = [];
 let editingOrderId = null;  // null = new order, number = editing
+let currentTicketOrder = null;  // order currently shown in ticket modal
 
 // ══════════════════════════════════════════════
 //  DOM REFERENCES
@@ -592,6 +593,7 @@ async function completeOrder(id) {
 //  TICKET
 // ══════════════════════════════════════════════
 function showTicket(order) {
+  currentTicketOrder = order;  // save for print handler
   const fee = order.delivery_fee || 0;
   const grandTotal = order.total + fee;
   const timeStr = formatTime(order.created_at);
@@ -905,20 +907,12 @@ document.getElementById('btn-connect-printer').addEventListener('click', () => {
 
 // This replaces the old ticket-print handler
 document.getElementById('ticket-print').addEventListener('click', async () => {
-  // Find the order that's currently showing in the ticket modal
-  const orderIdMatch = ticketBody.innerHTML.match(/Pedido #(\d+)/);
-  if (!orderIdMatch) return;
-
-  const orderId = parseInt(orderIdMatch[1]);
-  const order = activeOrders.find(o => o.id === orderId);
-
-  if (!order) {
-    // Try fetching from the displayed ticket data as fallback
-    alert('No se encontro el pedido en ordenes activas.');
+  if (!currentTicketOrder) {
+    alert('No hay pedido seleccionado para imprimir.');
     return;
   }
 
-  const ticketData = buildTicketBytes(order);
+  const ticketData = buildTicketBytes(currentTicketOrder);
   const success = await sendToPrinter(ticketData);
 
   if (success) {
