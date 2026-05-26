@@ -335,13 +335,29 @@ header h1 {
 
 /* ── ORDER TOTAL ── */
 .order-total {
-  display: flex;
-  justify-content: space-between;
-  font-size: 1.1rem;
-  font-weight: bold;
   padding: 10px 0;
   border-top: 2px solid #eee;
   flex-shrink: 0;
+}
+
+.total-lines {
+  width: 100%;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  padding: 2px 0;
+}
+
+.total-row.total-grand {
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-top: 1px solid #eee;
+  padding-top: 6px;
+  margin-top: 4px;
+  color: #d32f2f;
 }
 
 /* ── SEND / EDIT BUTTONS ── */

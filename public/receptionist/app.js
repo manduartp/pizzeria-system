@@ -15,7 +15,10 @@ let currentTicketOrder = null;  // order currently shown in ticket modal
 // ══════════════════════════════════════════════
 const menuGrid = document.getElementById('menu-grid');
 const currentItemsEl = document.getElementById('current-items');
-const orderTotalEl = document.getElementById('order-total');
+const orderSubtotalEl = document.getElementById('order-subtotal');
+const orderFeeEl = document.getElementById('order-fee');
+const orderGrandTotalEl = document.getElementById('order-grand-total');
+const feeRow = document.getElementById('fee-row');
 const btnSend = document.getElementById('btn-send-order');
 const btnCancelEdit = document.getElementById('btn-cancel-edit');
 const btnDeleteOrder = document.getElementById('btn-delete-order');
@@ -425,8 +428,22 @@ function renderCart() {
     });
   }
 
-  orderTotalEl.textContent = peso(getCartTotal());
+  // Update totals with real-time delivery fee
+  const subtotal = getCartTotal();
+  const fee = parseFloat(deliveryFeeInput.value) || 0;
+  orderSubtotalEl.textContent = peso(subtotal);
+  if (fee > 0) {
+    orderFeeEl.textContent = peso(fee);
+    orderGrandTotalEl.textContent = peso(subtotal + fee);
+    feeRow.classList.remove('hidden');
+  } else {
+    orderGrandTotalEl.textContent = peso(subtotal);
+    feeRow.classList.add('hidden');
+  }
 }
+
+// Re-render totals when delivery fee changes
+deliveryFeeInput.addEventListener('input', renderCart);
 
 // ══════════════════════════════════════════════
 //  TEXT BUILDERS (the core of the new approach)

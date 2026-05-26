@@ -91,13 +91,13 @@
       <div class="client-section">
         <h3>👤 Datos del Cliente</h3>
         <div class="order-details">
-          <input type="text" id="client-name"
-                 placeholder="Nombre del cliente" class="input-field">
           <div class="phone-field-row">
             <input type="tel" id="client-phone"
                    placeholder="Número del cliente" class="input-field">
             <button id="btn-autofill" class="btn-autofill hidden" type="button" title="Autocompletar datos">📥</button>
           </div>
+          <input type="text" id="client-name"
+                 placeholder="Nombre del cliente" class="input-field">
           <input type="text" id="delivery-address"
                  placeholder="Dirección de entrega" class="input-field">
           <div class="delivery-fee-row">
@@ -120,8 +120,20 @@
           <p class="empty-cart">Agrega productos del menú</p>
         </div>
         <div class="order-total">
-          <span>Subtotal:</span>
-          <span id="order-total">\$0</span>
+          <div id="total-lines" class="total-lines">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span id="order-subtotal">$0</span>
+            </div>
+            <div id="fee-row" class="total-row hidden">
+              <span>Envío:</span>
+              <span id="order-fee">$0</span>
+            </div>
+            <div class="total-row total-grand">
+              <span>Total:</span>
+              <span id="order-grand-total">$0</span>
+            </div>
+          </div>
         </div>
         <button id="btn-send-order" class="btn-send" disabled>
           Enviar a Cocina 🔥
