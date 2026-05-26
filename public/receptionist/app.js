@@ -18,6 +18,7 @@ const currentItemsEl = document.getElementById('current-items');
 const orderTotalEl = document.getElementById('order-total');
 const btnSend = document.getElementById('btn-send-order');
 const btnCancelEdit = document.getElementById('btn-cancel-edit');
+const btnDeleteOrder = document.getElementById('btn-delete-order');
 const activeOrdersList = document.getElementById('active-orders-list');
 const builderTitle = document.getElementById('builder-title');
 const cartTitle = document.getElementById('cart-title');
@@ -541,11 +542,13 @@ function updateBuilderMode() {
     cartTitle.textContent = `Editando #${editingOrderId}`;
     btnSend.textContent = '💾 Guardar Cambios';
     btnCancelEdit.classList.remove('hidden');
+    btnDeleteOrder.classList.remove('hidden');
   } else {
     builderTitle.textContent = 'Nuevo Pedido';
     cartTitle.textContent = 'Pedido Actual';
     btnSend.textContent = 'Enviar a Cocina 🔥';
     btnCancelEdit.classList.add('hidden');
+    btnDeleteOrder.classList.add('hidden');
   }
 }
 
@@ -553,6 +556,20 @@ btnCancelEdit.addEventListener('click', () => {
   editingOrderId = null;
   clearForm();
   updateBuilderMode();
+});
+
+btnDeleteOrder.addEventListener('click', async () => {
+  if (!editingOrderId) return;
+  if (!confirm('¿Cancelar este pedido?')) return;
+  try {
+    const res = await fetch(`/api/orders/${editingOrderId}/cancel`, { method: 'PATCH' });
+    if (!res.ok) throw new Error();
+    editingOrderId = null;
+    clearForm();
+    updateBuilderMode();
+  } catch (err) {
+    alert('Error al cancelar el pedido.');
+  }
 });
 
 function clearForm() {
@@ -610,7 +627,6 @@ function renderActiveOrders() {
           <button class="btn-action btn-edit" data-id="${order.id}">✏️ Editar</button>
           <button class="btn-action btn-ticket" data-id="${order.id}">🧾 Ticket</button>
           <button class="btn-action btn-complete" data-id="${order.id}">✅ Completar</button>
-          <button class="btn-action btn-cancel-order" data-id="${order.id}">🗑️ Eliminar</button>
         </div>
       </div>
     `;
@@ -639,24 +655,7 @@ function renderActiveOrders() {
     });
   });
 
-    // Cancel handlers
-  activeOrdersList.querySelectorAll('.btn-cancel-order').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('¿Cancelar este pedido?')) return;
-      const id = parseInt(btn.dataset.id);
-      try {
-        const res = await fetch(`/api/orders/${id}/cancel`, { method: 'PATCH' });
-        if (!res.ok) throw new Error();
-        if (editingOrderId === id) {
-          editingOrderId = null;
-          clearForm();
-          updateBuilderMode();
-        }
-      } catch (err) {
-        alert('Error al cancelar el pedido.');
-      }
-    });
-  });
+  // ── COMPLETE ──
 }
 
 async function completeOrder(id) {
