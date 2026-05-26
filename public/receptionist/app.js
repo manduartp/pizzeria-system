@@ -108,6 +108,7 @@ function showAutofillPreview(data) {
   clientNameInput.value = data.client_name || '';
   deliveryAddressInput.value = data.delivery_address || '';
   orderNotesInput.value = data.notes || '';
+  autoResizeNotes();
   autofillPreviewFields.forEach(el => el.classList.add('autofill-preview'));
   btnAutofill.classList.remove('hidden');
 }
