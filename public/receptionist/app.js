@@ -563,6 +563,7 @@ function clearForm() {
   deliveryAddressInput.value = '';
   deliveryFeeInput.value = '';
   orderNotesInput.value = '';
+  autoResizeNotes();
 }
 
 // ══════════════════════════════════════════════
