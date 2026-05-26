@@ -132,6 +132,7 @@ function dismissAutofill() {
   clientNameInput.value = savedFieldValues.name;
   deliveryAddressInput.value = savedFieldValues.address;
   orderNotesInput.value = savedFieldValues.notes;
+  autoResizeNotes();
   autofillPreviewFields.forEach(el => el.classList.remove('autofill-preview'));
   btnAutofill.classList.add('hidden');
   autofillData = null;
@@ -432,7 +433,7 @@ function renderCart() {
   const subtotal = getCartTotal();
   const fee = parseFloat(deliveryFeeInput.value) || 0;
   orderSubtotalEl.textContent = peso(subtotal);
-  if (fee > 0) {
+  if (cart.length > 0 && fee > 0) {
     orderFeeEl.textContent = peso(fee);
     orderGrandTotalEl.textContent = peso(subtotal + fee);
     feeRow.classList.remove('hidden');
