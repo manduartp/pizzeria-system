@@ -514,6 +514,50 @@ header h1 {
   cursor: default;
 }
 
+/* ── CONFIRM MODAL ── */
+.confirm-content {
+  max-width: 400px;
+  text-align: center;
+}
+
+.confirm-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.confirm-message {
+  font-size: 1.05rem;
+  color: #444;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.btn-confirm-danger {
+  flex: 1;
+  padding: 10px;
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-confirm-danger:hover { background: #b71c1c; }
+
+.btn-confirm-success {
+  flex: 1;
+  padding: 10px;
+  background: #388e3c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-confirm-success:hover { background: #2e7d32; }
+
 /* ── MODALS (shared) ── */
 .modal {
   position: fixed;

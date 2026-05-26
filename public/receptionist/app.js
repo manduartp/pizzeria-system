@@ -47,10 +47,44 @@ const summaryContent = document.getElementById('summary-content');
 const ticketModal = document.getElementById('ticket-modal');
 const ticketBody = document.getElementById('ticket-body');
 
+// Confirm modal
+const confirmModal = document.getElementById('confirm-modal');
+const confirmIcon = document.getElementById('confirm-icon');
+const confirmMessage = document.getElementById('confirm-message');
+const confirmYes = document.getElementById('confirm-yes');
+const confirmNo = document.getElementById('confirm-no');
+
 // ══════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════
 function peso(n) { return '$' + n; }
+
+// ── CONFIRM MODAL ──
+function showConfirmModal(icon, message, yesText, yesClass) {
+  return new Promise(resolve => {
+    confirmIcon.textContent = icon;
+    confirmMessage.textContent = message;
+    confirmYes.textContent = yesText || 'Sí';
+    confirmYes.className = yesClass || 'btn-add';
+    confirmModal.classList.remove('hidden');
+
+    confirmYes.onclick = () => {
+      confirmModal.classList.add('hidden');
+      resolve(true);
+    };
+    confirmNo.onclick = () => {
+      confirmModal.classList.add('hidden');
+      resolve(false);
+    };
+    // Close on backdrop click
+    confirmModal.onclick = (e) => {
+      if (e.target === confirmModal) {
+        confirmModal.classList.add('hidden');
+        resolve(false);
+      }
+    };
+  });
+}
 
 // ══════════════════════════════════════════════
 //  AUTOFILL BY PHONE
@@ -84,6 +118,7 @@ function confirmAutofill() {
   autofillPreviewFields.forEach(el => el.classList.remove('autofill-preview'));
   btnAutofill.classList.add('hidden');
   autofillData = null;
+  autoResizeNotes();
 }
 
 function dismissAutofill() {
@@ -100,7 +135,10 @@ function dismissAutofill() {
 
 // Detect 10 digits → fetch → show preview
 clientPhoneInput.addEventListener('input', async () => {
-  const digits = clientPhoneInput.value.replace(/\D/g, '');
+  // Sanitize: only digits, max 10
+  clientPhoneInput.value = clientPhoneInput.value.replace(/\D/g, '').slice(0, 10);
+
+  const digits = clientPhoneInput.value;
 
   // If user is still typing / changed the number, dismiss any active preview
   if (autofillActive) dismissAutofill();
@@ -421,7 +459,8 @@ btnSend.addEventListener('click', async () => {
 
   // Confirm if delivery fee is 0
   if (delivery_fee === 0) {
-    if (!confirm('El costo de envío es \$0. ¿Continuar?')) return;
+    const ok = await showConfirmModal('🚗', 'El costo de envío es $0. ¿Continuar?', 'Sí, continuar', 'btn-add');
+    if (!ok) return;
   }
 
   const kitchen_text = buildKitchenText();
@@ -560,7 +599,8 @@ btnCancelEdit.addEventListener('click', () => {
 
 btnDeleteOrder.addEventListener('click', async () => {
   if (!editingOrderId) return;
-  if (!confirm('¿Cancelar este pedido?')) return;
+  const ok = await showConfirmModal('🗑️', '¿Cancelar este pedido?', 'Sí, cancelar', 'btn-confirm-danger');
+  if (!ok) return;
   try {
     const res = await fetch(`/api/orders/${editingOrderId}/cancel`, { method: 'PATCH' });
     if (!res.ok) throw new Error();
@@ -659,6 +699,9 @@ function renderActiveOrders() {
 }
 
 async function completeOrder(id) {
+  const ok = await showConfirmModal('✅', '¿Marcar este pedido como completado?', 'Sí, completar', 'btn-confirm-success');
+  if (!ok) return;
+
   const btn = activeOrdersList.querySelector(`.btn-complete[data-id="${id}"]`);
   if (btn) btn.disabled = true;
 
