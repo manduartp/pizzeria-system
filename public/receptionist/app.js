@@ -320,7 +320,19 @@ document.getElementById('modal-add').addEventListener('click', () => {
 //  CART MANAGEMENT
 // ══════════════════════════════════════════════
 function addToCart(item) {
-  cart.push(item);
+  // Merge with existing item if same name, modifiers, extras, and notes
+  const existing = cart.find(i =>
+    i.name === item.name &&
+    JSON.stringify(i.modifiers) === JSON.stringify(item.modifiers) &&
+    JSON.stringify(i.extras) === JSON.stringify(item.extras) &&
+    i.notes === item.notes
+  );
+  if (existing) {
+    existing.quantity += item.quantity;
+    existing.price += item.price;
+  } else {
+    cart.push(item);
+  }
   renderCart();
 }
 
@@ -568,34 +580,37 @@ function renderActiveOrders() {
     const fee = order.delivery_fee ? order.delivery_fee : 0;
     const grandTotal = order.total + fee;
 
+    // Items: strip prices, join with comma
+    const itemsLine = order.display_text
+      ? order.display_text.split('\n').map(line =>
+          line.replace(/ — \$\d+$/, '').trim()
+        ).join(', ')
+      : order.kitchen_text || '';
+
+    // Info line: collect detail snippets
+    const infoParts = [];
+    if (order.client_phone) infoParts.push('📱 ' + order.client_phone);
+    if (order.delivery_address) infoParts.push('📍 ' + order.delivery_address);
+    if (fee > 0) infoParts.push('🚗 ' + peso(fee));
+    if (order.notes) infoParts.push('📝 ' + order.notes);
+    const infoLine = infoParts.join(' · ');
+
     return `
-      <div class="active-order-card" id="active-order-${order.id}">
-        <div class="active-order-header">
-          <span class="active-order-id">#${order.id} — ${timeStr}${modified}</span>
-          <span class="active-order-total">${peso(grandTotal)}</span>
+      <div class="active-order-card compact" id="active-order-${order.id}">
+        <div class="order-header-row">
+          <span class="order-header-left">#${order.id}${order.client_name ? ' — ' + order.client_name : ''} — ${timeStr}${modified}</span>
+          <span class="order-header-right">
+            <span class="order-total-label">${peso(grandTotal)}</span>
+            <span class="order-btn-group">
+              <button class="btn-icon btn-edit" data-id="${order.id}" title="Editar">✏️</button>
+              <button class="btn-icon btn-ticket" data-id="${order.id}" title="Ticket">🧾</button>
+              <button class="btn-icon btn-complete" data-id="${order.id}" title="Completar">✅</button>
+              <button class="btn-icon btn-cancel-order" data-id="${order.id}" title="Cancelar">🗑️</button>
+            </span>
+          </span>
         </div>
-        <div class="active-order-items">${order.display_text.replace(/\n/g, '<br>')}</div>
-        ${order.client_name
-          ? `<div class="active-order-detail">👤 ${order.client_name}</div>`
-          : ''}
-        ${order.client_phone
-          ? '<div class="active-order-detail">📞 ' + order.client_phone + '</div>'
-          : ''}
-        ${order.delivery_address
-          ? `<div class="active-order-detail">📍 ${order.delivery_address}</div>`
-          : ''}
-        ${fee > 0
-          ? `<div class="active-order-detail">🚗 Envío: ${peso(fee)}</div>`
-          : ''}
-        ${order.notes
-          ? `<div class="active-order-detail">📝 ${order.notes}</div>`
-          : ''}
-        <div class="active-order-actions">
-          <button class="btn-edit" data-id="${order.id}">✏️ Editar</button>
-          <button class="btn-ticket" data-id="${order.id}">🧾 Ticket</button>
-          <button class="btn-complete" data-id="${order.id}">✅ Completar</button>
-          <button class="btn-cancel-order" data-id="${order.id}">🗑️ Eliminar</button>
-        </div>
+        <div class="order-items-row">${itemsLine}</div>
+        ${infoLine ? `<div class="order-info-row">${infoLine}</div>` : ''}
       </div>
     `;
   }).join('');
@@ -645,10 +660,7 @@ function renderActiveOrders() {
 
 async function completeOrder(id) {
   const btn = activeOrdersList.querySelector(`.btn-complete[data-id="${id}"]`);
-  if (btn) {
-    btn.textContent = 'Completando...';
-    btn.disabled = true;
-  }
+  if (btn) btn.disabled = true;
 
   try {
     const response = await fetch(`/api/orders/${id}/complete`, {
@@ -666,10 +678,7 @@ async function completeOrder(id) {
   } catch (err) {
     console.error('Failed to complete order:', err);
     alert('Error al completar el pedido.');
-    if (btn) {
-      btn.textContent = '✅ Completar';
-      btn.disabled = false;
-    }
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1325,6 +1334,14 @@ ticketModal.addEventListener('click', (e) => {
 // ══════════════════════════════════════════════
 //  INITIALIZATION
 // ══════════════════════════════════════════════
+
+// Auto-resize notes textarea
+function autoResizeNotes() {
+  orderNotesInput.style.height = 'auto';
+  orderNotesInput.style.height = orderNotesInput.scrollHeight + 'px';
+}
+orderNotesInput.addEventListener('input', autoResizeNotes);
+
 renderMenu();
 renderCart();
 updateBuilderMode();

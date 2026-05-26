@@ -190,6 +190,14 @@ header h1 {
   border-color: #d32f2f;
 }
 
+.input-notes-auto {
+  resize: none;
+  overflow: hidden;
+  min-height: 42px;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
 .input-short {
   width: 100px;
 }
@@ -249,14 +257,18 @@ header h1 {
 
 /* ── SIDEBAR: CURRENT ORDER ── */
 .current-order {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 12px 16px;
-  border-bottom: 1px solid #eee;
-  flex-shrink: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .current-order h3 {
   font-size: 1.05rem;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .current-order h3.editing-title {
@@ -264,9 +276,10 @@ header h1 {
 }
 
 .current-items {
-  max-height: 180px;
+  flex: 1;
   overflow-y: auto;
   margin-bottom: 10px;
+  min-height: 0;
 }
 
 .empty-cart {
@@ -328,6 +341,7 @@ header h1 {
   font-weight: bold;
   padding: 10px 0;
   border-top: 2px solid #eee;
+  flex-shrink: 0;
 }
 
 /* ── SEND / EDIT BUTTONS ── */
@@ -342,6 +356,7 @@ header h1 {
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-send:hover:not(:disabled) {
@@ -364,6 +379,7 @@ header h1 {
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-cancel-edit:hover {
@@ -387,91 +403,93 @@ header h1 {
   padding-top: 12px;
 }
 
-.active-order-card {
+/* Compact card: 3-row format */
+.active-order-card.compact {
   background: #f8f9fa;
   border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 10px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
   transition: opacity 0.3s;
 }
 
-.active-order-header {
+.order-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.active-order-id {
+.order-header-left {
   font-weight: bold;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.active-order-total {
+.order-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.order-total-label {
   font-weight: bold;
   color: #d32f2f;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
 }
 
-.active-order-items {
-  font-size: 0.85rem;
-  color: #555;
-  margin-bottom: 6px;
-  line-height: 1.5;
-}
-
-.active-order-detail {
-  font-size: 0.85rem;
-  color: #777;
-  margin-bottom: 3px;
-}
-
-.active-order-actions {
+.order-btn-group {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 2px;
 }
 
-.active-order-actions button {
-  flex: 1;
-  padding: 8px 6px;
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: none;
   border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  background: transparent;
 }
 
-.active-order-actions button:hover {
-  opacity: 0.85;
+.btn-icon:hover {
+  background: rgba(0,0,0,0.08);
 }
 
-.btn-edit {
-  background: #ff9800;
-  color: #fff;
+.btn-icon.btn-edit:hover { background: #fff3e0; }
+.btn-icon.btn-ticket:hover { background: #e3f2fd; }
+.btn-icon.btn-complete:hover { background: #e8f5e9; }
+.btn-icon.btn-cancel-order:hover { background: #ffebee; }
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
-.btn-ticket {
-  background: #1976d2;
-  color: #fff;
+.order-items-row {
+  font-size: 0.85rem;
+  color: #444;
+  line-height: 1.5;
+  word-wrap: break-word;
 }
 
-.btn-complete {
-  background: #388e3c;
-  color: #fff;
-}
-
-.btn-cancel-order {
-  background: #d32f2f;
-  color: #fff;
-  flex: 1;
-}
-
-.btn-cancel-order:hover {
-  background: #b71c1c;
+.order-info-row {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 2px;
+  word-wrap: break-word;
 }
 
 /* ── MODALS (shared) ── */
