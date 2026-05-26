@@ -75,32 +75,35 @@
         </div>
       </div>
 
-      <!-- Order Details -->
-      <div class="order-details">
-        <input type="text" id="client-name"
-               placeholder="👤 Nombre del cliente" class="input-field">
-        <div class="phone-field-row">
-          <input type="tel" id="client-phone"
-                 placeholder="📞 Número del cliente" class="input-field">
-          <button id="btn-autofill" class="btn-autofill hidden" type="button" title="Autocompletar datos">📥</button>
-        </div>
-        <input type="text" id="delivery-address"
-               placeholder="📍 Dirección de entrega" class="input-field">
-        <div class="delivery-fee-row">
-          <label for="delivery-fee">🚗 Envío:</label>
-          <input type="number" id="delivery-fee"
-                 placeholder="0" min="0" step="10"
-                 inputmode="numeric" pattern="[0-9]*"
-                 class="input-field input-short">
-        </div>
-        <input type="text" id="order-notes"
-               placeholder="📝 Notas generales del pedido" class="input-field">
-      </div>
-
     </section>
 
     <!-- RIGHT PANEL: CURRENT ORDER + ACTIVE ORDERS -->
     <aside class="sidebar">
+
+      <!-- Client Details -->
+      <div class="client-section">
+        <h3>👤 Datos del Cliente</h3>
+        <div class="order-details">
+          <input type="text" id="client-name"
+                 placeholder="Nombre del cliente" class="input-field">
+          <div class="phone-field-row">
+            <input type="tel" id="client-phone"
+                   placeholder="Número del cliente" class="input-field">
+            <button id="btn-autofill" class="btn-autofill hidden" type="button" title="Autocompletar datos">📥</button>
+          </div>
+          <input type="text" id="delivery-address"
+                 placeholder="Dirección de entrega" class="input-field">
+          <div class="delivery-fee-row">
+            <label for="delivery-fee">🚗 Envío:</label>
+            <input type="number" id="delivery-fee"
+                   placeholder="0" min="0" step="10"
+                   inputmode="numeric" pattern="[0-9]*"
+                   class="input-field input-short">
+          </div>
+          <input type="text" id="order-notes"
+                 placeholder="Notas generales del pedido" class="input-field">
+        </div>
+      </div>
 
       <!-- Current Order Being Built -->
       <div class="current-order">

@@ -53,13 +53,26 @@ header h1 {
 }
 
 .sidebar {
-  width: 360px;
-  min-width: 360px;
+  width: 420px;
+  min-width: 420px;
   background: #fff;
   border-left: 1px solid #ddd;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ── CLIENT SECTION ── */
+.client-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.client-section h3 {
+  font-size: 1rem;
+  margin-bottom: 10px;
+  color: #555;
 }
 
 /* ── BUILDER TITLE ── */
@@ -119,7 +132,6 @@ header h1 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 .menu-item {
@@ -158,8 +170,7 @@ header h1 {
 .order-details {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
 }
 
 .input-field {
@@ -235,8 +246,9 @@ header h1 {
 
 /* ── SIDEBAR: CURRENT ORDER ── */
 .current-order {
-  padding: 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid #eee;
+  flex-shrink: 0;
 }
 
 .current-order h3 {
@@ -249,9 +261,9 @@ header h1 {
 }
 
 .current-items {
-  max-height: 240px;
+  max-height: 180px;
   overflow-y: auto;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .empty-cart {
