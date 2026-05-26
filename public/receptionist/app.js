@@ -377,7 +377,13 @@ function addToCart(item) {
 }
 
 function removeFromCart(index) {
-  cart.splice(index, 1);
+  const item = cart[index];
+  if (item.quantity > 1) {
+    item.quantity--;
+    item.price -= item.unitPrice;
+  } else {
+    cart.splice(index, 1);
+  }
   renderCart();
 }
 
