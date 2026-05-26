@@ -933,28 +933,6 @@ header h1 {
   }
 }
 
-/* ── ADMIN BUTTON ── */
-.btn-admin {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: #555;
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  opacity: 0.4;
-  transition: opacity 0.2s;
-  z-index: 100;
-}
-
-.btn-admin:hover {
-  opacity: 1;
-}
-
 /* ── ADMIN MODAL ── */
 .modal-admin {
   max-width: 700px;
