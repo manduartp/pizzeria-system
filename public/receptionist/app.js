@@ -491,6 +491,7 @@ function enterEditMode(order) {
   deliveryAddressInput.value = order.delivery_address || '';
   deliveryFeeInput.value = order.delivery_fee || '';
   orderNotesInput.value = order.notes || '';
+  autoResizeNotes();
   renderCart();
   updateBuilderMode();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -587,30 +588,29 @@ function renderActiveOrders() {
         ).join(', ')
       : order.kitchen_text || '';
 
-    // Info line: collect detail snippets
-    const infoParts = [];
-    if (order.client_phone) infoParts.push('📱 ' + order.client_phone);
-    if (order.delivery_address) infoParts.push('📍 ' + order.delivery_address);
-    if (fee > 0) infoParts.push('🚗 ' + peso(fee));
-    if (order.notes) infoParts.push('📝 ' + order.notes);
-    const infoLine = infoParts.join(' · ');
+    // Build header details: inline snippets for the header row
+    const headerParts = [];
+    if (order.client_phone) headerParts.push('📱 ' + order.client_phone);
+    if (order.delivery_address) headerParts.push('📍 ' + order.delivery_address);
+    if (fee > 0) headerParts.push('🚗 ' + peso(fee));
+    const headerDetail = headerParts.length ? ' · ' + headerParts.join(' · ') : '';
 
     return `
       <div class="active-order-card compact" id="active-order-${order.id}">
-        <div class="order-header-row">
-          <span class="order-header-left">#${order.id}${order.client_name ? ' — ' + order.client_name : ''} — ${timeStr}${modified}</span>
-          <span class="order-header-right">
+        <div class="card-main">
+          <div class="order-header-row">
+            <span class="order-header-left">#${order.id}${order.client_name ? ' — ' + order.client_name : ''} — ${timeStr}${modified}${headerDetail}</span>
             <span class="order-total-label">${peso(grandTotal)}</span>
-            <span class="order-btn-group">
-              <button class="btn-icon btn-edit" data-id="${order.id}" title="Editar">✏️</button>
-              <button class="btn-icon btn-ticket" data-id="${order.id}" title="Ticket">🧾</button>
-              <button class="btn-icon btn-complete" data-id="${order.id}" title="Completar">✅</button>
-              <button class="btn-icon btn-cancel-order" data-id="${order.id}" title="Cancelar">🗑️</button>
-            </span>
-          </span>
+          </div>
+          <div class="order-items-row">${itemsLine}</div>
+          ${order.notes ? `<div class="order-info-row">📝 ${order.notes}</div>` : ''}
         </div>
-        <div class="order-items-row">${itemsLine}</div>
-        ${infoLine ? `<div class="order-info-row">${infoLine}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn-action btn-edit" data-id="${order.id}">✏️ Editar</button>
+          <button class="btn-action btn-ticket" data-id="${order.id}">🧾 Ticket</button>
+          <button class="btn-action btn-complete" data-id="${order.id}">✅ Completar</button>
+          <button class="btn-action btn-cancel-order" data-id="${order.id}">🗑️ Eliminar</button>
+        </div>
       </div>
     `;
   }).join('');

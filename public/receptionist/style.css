@@ -260,7 +260,7 @@ header h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px 16px;
+  padding: 12px 16px 20px;
   min-height: 0;
   overflow: hidden;
 }
@@ -403,14 +403,19 @@ header h1 {
   padding-top: 12px;
 }
 
-/* Compact card: 3-row format */
+/* Compact card: flex row with main content + vertical button panel */
 .active-order-card.compact {
-  background: #f8f9fa;
+  display: flex;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 10px 12px;
   margin-bottom: 8px;
-  transition: opacity 0.3s;
+  overflow: hidden;
+}
+
+.card-main {
+  flex: 1;
+  padding: 10px 12px;
+  min-width: 0;
 }
 
 .order-header-row {
@@ -423,7 +428,7 @@ header h1 {
 
 .order-header-left {
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #555;
   white-space: nowrap;
   overflow: hidden;
@@ -431,51 +436,11 @@ header h1 {
   min-width: 0;
 }
 
-.order-header-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
 .order-total-label {
   font-weight: bold;
   color: #d32f2f;
-  font-size: 0.95rem;
-}
-
-.order-btn-group {
-  display: flex;
-  gap: 2px;
-}
-
-.btn-icon {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  background: transparent;
-}
-
-.btn-icon:hover {
-  background: rgba(0,0,0,0.08);
-}
-
-.btn-icon.btn-edit:hover { background: #fff3e0; }
-.btn-icon.btn-ticket:hover { background: #e3f2fd; }
-.btn-icon.btn-complete:hover { background: #e8f5e9; }
-.btn-icon.btn-cancel-order:hover { background: #ffebee; }
-
-.btn-icon:disabled {
-  opacity: 0.4;
-  cursor: default;
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .order-items-row {
@@ -490,6 +455,43 @@ header h1 {
   color: #888;
   margin-top: 2px;
   word-wrap: break-word;
+}
+
+/* Vertical button panel on the right */
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  min-width: 82px;
+  text-align: left;
+  color: #fff;
+}
+
+.btn-action:hover { opacity: 0.85; }
+
+.btn-action + .btn-action {
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+
+.btn-action.btn-edit { background: #ff9800; }
+.btn-action.btn-ticket { background: #1976d2; }
+.btn-action.btn-complete { background: #388e3c; }
+.btn-action.btn-cancel-order { background: #d32f2f; }
+
+.btn-action:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ── MODALS (shared) ── */
