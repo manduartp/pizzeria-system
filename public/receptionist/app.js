@@ -52,6 +52,90 @@ const ticketBody = document.getElementById('ticket-body');
 function peso(n) { return '$' + n; }
 
 // ══════════════════════════════════════════════
+//  AUTOFILL BY PHONE
+// ══════════════════════════════════════════════
+let autofillData = null;
+let autofillActive = false;
+let savedFieldValues = { name: '', address: '', notes: '' };
+
+const btnAutofill = document.getElementById('btn-autofill');
+const autofillPreviewFields = [clientNameInput, deliveryAddressInput, orderNotesInput];
+
+function showAutofillPreview(data) {
+  // Save whatever the user typed manually before preview
+  savedFieldValues = {
+    name: clientNameInput.value,
+    address: deliveryAddressInput.value,
+    notes: orderNotesInput.value
+  };
+  autofillData = data;
+  autofillActive = true;
+  clientNameInput.value = data.client_name || '';
+  deliveryAddressInput.value = data.delivery_address || '';
+  orderNotesInput.value = data.notes || '';
+  autofillPreviewFields.forEach(el => el.classList.add('autofill-preview'));
+  btnAutofill.classList.remove('hidden');
+}
+
+function confirmAutofill() {
+  if (!autofillActive) return;
+  autofillActive = false;
+  autofillPreviewFields.forEach(el => el.classList.remove('autofill-preview'));
+  btnAutofill.classList.add('hidden');
+  autofillData = null;
+}
+
+function dismissAutofill() {
+  if (!autofillActive) return;
+  autofillActive = false;
+  // Restore whatever the user had typed before the preview
+  clientNameInput.value = savedFieldValues.name;
+  deliveryAddressInput.value = savedFieldValues.address;
+  orderNotesInput.value = savedFieldValues.notes;
+  autofillPreviewFields.forEach(el => el.classList.remove('autofill-preview'));
+  btnAutofill.classList.add('hidden');
+  autofillData = null;
+}
+
+// Detect 10 digits → fetch → show preview
+clientPhoneInput.addEventListener('input', async () => {
+  const digits = clientPhoneInput.value.replace(/\D/g, '');
+
+  // If user is still typing / changed the number, dismiss any active preview
+  if (autofillActive) dismissAutofill();
+
+  // Only trigger at exactly 10 digits
+  if (digits.length !== 10) return;
+
+  try {
+    const res = await fetch(`/api/orders/last-by-phone/${encodeURIComponent(digits)}`);
+    const result = await res.json();
+    if (result.found) showAutofillPreview(result.data);
+  } catch (err) {
+    console.error('Autofill lookup failed:', err);
+  }
+});
+
+// Enter key confirms autofill
+clientPhoneInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && autofillActive) {
+    e.preventDefault();
+    confirmAutofill();
+  }
+});
+
+// Clicking outside phone field dismisses the preview
+clientPhoneInput.addEventListener('blur', (e) => {
+  if (!autofillActive) return;
+  // If focus moved to the autofill button itself, let the click handle it
+  if (e.relatedTarget === btnAutofill) return;
+  dismissAutofill();
+});
+
+// Button click confirms
+btnAutofill.addEventListener('click', confirmAutofill);
+
+// ══════════════════════════════════════════════
 //  CATEGORY TABS
 // ══════════════════════════════════════════════
 document.querySelectorAll('.tab').forEach(tab => {

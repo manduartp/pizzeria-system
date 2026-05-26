@@ -79,8 +79,11 @@
       <div class="order-details">
         <input type="text" id="client-name"
                placeholder="👤 Nombre del cliente" class="input-field">
-        <input type="tel" id="client-phone"
-               placeholder="📞 Número del cliente" class="input-field">
+        <div class="phone-field-row">
+          <input type="tel" id="client-phone"
+                 placeholder="📞 Número del cliente" class="input-field">
+          <button id="btn-autofill" class="btn-autofill hidden" type="button" title="Autocompletar datos">📥</button>
+        </div>
         <input type="text" id="delivery-address"
                placeholder="📍 Dirección de entrega" class="input-field">
         <div class="delivery-fee-row">

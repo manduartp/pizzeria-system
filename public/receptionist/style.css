@@ -192,6 +192,47 @@ header h1 {
   white-space: nowrap;
 }
 
+/* ── PHONE FIELD + AUTOFILL ── */
+.phone-field-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.phone-field-row .input-field {
+  flex: 1;
+}
+
+.btn-autofill {
+  padding: 10px 12px;
+  background: #e8e8e8;
+  color: #555;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-autofill:hover {
+  border-color: #d32f2f;
+  background: #fff;
+}
+
+.btn-autofill:active {
+  background: #d32f2f;
+  color: #fff;
+}
+
+/* Preview mode: gray text for autofilled fields not yet confirmed */
+.input-field.autofill-preview {
+  color: #aaa !important;
+  font-style: italic;
+}
+
 /* ── SIDEBAR: CURRENT ORDER ── */
 .current-order {
   padding: 16px;

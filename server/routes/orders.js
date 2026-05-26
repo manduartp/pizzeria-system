@@ -218,5 +218,24 @@ module.exports = function (io) {
     res.json(days);
   });
 
+  // ─── LAST ORDER BY PHONE (for autofill) ───
+  router.get('/last-by-phone/:phone', (req, res) => {
+    try {
+      const order = db.prepare(`
+        SELECT client_name, client_phone, delivery_address, notes
+        FROM orders
+        WHERE client_phone = ? AND status != 'cancelled'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).get(req.params.phone);
+
+      if (!order) return res.json({ found: false });
+      res.json({ found: true, data: order });
+    } catch (err) {
+      console.error('Error looking up phone:', err);
+      res.status(500).json({ error: 'Failed to look up phone' });
+    }
+  });
+
   return router;
 };
