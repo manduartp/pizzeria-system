@@ -298,6 +298,12 @@ The layout is fully responsive — below 768px it stacks vertically: menu → cl
 - Tickets are **not** affected (uses `display_text`, not `kitchen_text`)
 - Daily summary: "Clientes Nuevos" stat counts unique phones whose first-ever completed order was today
 
+### 🔍 Search by Phone
+- Search input in the header bar — type 10 digits and press Enter or click "Buscar"
+- Shows all orders for that phone number: pending, completed, and cancelled
+- Each result card shows status icon, date, time, items, and client info
+- **Click any result card to open its ticket** (works for all statuses)
+
 ### 🧾 Ticket Printing
 - Thermal printer via WebUSB + ESC/POS (Chrome/Chromium only)
 - Connect printer via "🔌 Conectar Impresora" button
