@@ -101,6 +101,7 @@ function renderOrders() {
               ? '<span class="cancelled-label">CANCELADO — </span><span class="order-text strikethrough">' + order.kitchen_text + '</span>'
               : '<span class="order-text">' + modified + order.kitchen_text + '</span>'
             }
+            ${order.is_new_client && !cancelled ? '<span class="new-client-tag">🟢 CLIENTE NUEVO</span>' : ''}
           </span>
         </div>
       `;

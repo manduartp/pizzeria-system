@@ -11,6 +11,10 @@
   <!-- TOP NAV -->
   <header>
     <h1>🍕 Joselo's Pizza — Recepción</h1>
+    <div class="header-search">
+      <input type="tel" id="search-phone" placeholder="🔍 Teléfono" class="search-input" maxlength="10" inputmode="numeric">
+      <button id="btn-search" class="btn-search">Buscar</button>
+    </div>
     <div class="header-actions">
       <button id="btn-summary" class="btn-header">📊 Resumen del Día</button>
       <button id="btn-connect-printer" class="btn-printer">🔌 Conectar Impresora</button>
@@ -89,7 +93,10 @@
 
       <!-- Client Details -->
       <div class="client-section">
-        <h3>👤 Datos del Cliente</h3>
+        <div class="client-section-header">
+          <h3>👤 Datos del Cliente</h3>
+          <span id="new-client-badge" class="new-client-badge hidden">🟢 Cliente Nuevo</span>
+        </div>
         <div class="order-details">
           <div class="phone-field-row">
             <input type="tel" id="client-phone"
@@ -185,6 +192,17 @@
         <button id="admin-cancel" class="btn-cancel">Cancelar</button>
         <button id="admin-save" class="btn-add">💾 Guardar y Recargar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Search Results Modal -->
+  <div id="search-modal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div id="search-results-header">
+        <h3 id="search-results-title">Resultados</h3>
+      </div>
+      <div id="search-results-list"></div>
+      <button id="search-close" class="btn-cancel">Cerrar</button>
     </div>
   </div>
 

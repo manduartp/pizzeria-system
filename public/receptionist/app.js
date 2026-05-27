@@ -57,6 +57,17 @@ const confirmMessage = document.getElementById('confirm-message');
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');
 
+// Search
+const searchPhone = document.getElementById('search-phone');
+const btnSearch = document.getElementById('btn-search');
+const searchModal = document.getElementById('search-modal');
+const searchResultsTitle = document.getElementById('search-results-title');
+const searchResultsList = document.getElementById('search-results-list');
+const searchClose = document.getElementById('search-close');
+
+// Badge
+const newClientBadge = document.getElementById('new-client-badge');
+
 // ══════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════
@@ -149,12 +160,20 @@ clientPhoneInput.addEventListener('input', async () => {
   if (autofillActive) dismissAutofill();
 
   // Only trigger at exactly 10 digits
-  if (digits.length !== 10) return;
+  if (digits.length !== 10) {
+    newClientBadge.classList.add('hidden');
+    return;
+  }
 
   try {
     const res = await fetch(`/api/orders/last-by-phone/${encodeURIComponent(digits)}`);
     const result = await res.json();
-    if (result.found) showAutofillPreview(result.data);
+    if (result.found) {
+      showAutofillPreview(result.data);
+      newClientBadge.classList.add('hidden');
+    } else {
+      newClientBadge.classList.remove('hidden');
+    }
   } catch (err) {
     console.error('Autofill lookup failed:', err);
   }
@@ -178,6 +197,96 @@ clientPhoneInput.addEventListener('blur', (e) => {
 
 // Button click confirms
 btnAutofill.addEventListener('click', confirmAutofill);
+
+// ══════════════════════════════════════════════
+//  SEARCH BY PHONE
+// ══════════════════════════════════════════════
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('es-MX', {
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+}
+
+function formatTimeShort(dateStr) {
+  return new Date(dateStr).toLocaleTimeString('es-MX', {
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+async function searchByPhone() {
+  const digits = searchPhone.value.replace(/\D/g, '');
+  if (digits.length !== 10) {
+    alert('Ingresa un número de 10 dígitos.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/orders/history/by-phone/${encodeURIComponent(digits)}`);
+    const orders = await res.json();
+
+    searchResultsTitle.textContent = `🔍 Resultados para ${digits}`;
+
+    if (orders.length === 0) {
+      searchResultsList.innerHTML = '<p class="empty-cart">Sin resultados</p>';
+    } else {
+      searchResultsList.innerHTML = orders.map(order => {
+        const fee = order.delivery_fee || 0;
+        const grandTotal = order.total + fee;
+        const dateStr = formatDate(order.created_at);
+        const timeStr = formatTimeShort(order.created_at);
+        const statusIcon = order.status === 'completed' ? '✅'
+          : order.status === 'cancelled' ? '🗑️' : '⏳';
+        const itemsLine = order.display_text
+          ? order.display_text.split('\n').map(line =>
+              line.replace(/ — \$\d+$/, '').trim()
+            ).join(', ')
+          : order.kitchen_text || '';
+        const infoParts = [];
+        if (order.client_name) infoParts.push('👤 ' + order.client_name);
+        if (order.delivery_address) infoParts.push('📍 ' + order.delivery_address);
+        if (order.notes) infoParts.push('📝 ' + order.notes);
+        const infoLine = infoParts.join(' · ');
+
+        return `
+          <div class="search-result-card">
+            <div class="search-result-header">
+              <span>${statusIcon} #${order.id} — ${dateStr} — ${timeStr}</span>
+              <span class="search-result-total">${peso(grandTotal)}</span>
+            </div>
+            <div class="search-result-items">${itemsLine}</div>
+            ${infoLine ? `<div class="search-result-info">${infoLine}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    searchModal.classList.remove('hidden');
+  } catch (err) {
+    console.error('Search failed:', err);
+    alert('Error al buscar. Verifica la conexión.');
+  }
+}
+
+btnSearch.addEventListener('click', searchByPhone);
+
+searchPhone.addEventListener('keydown', (e) => {
+  // Sanitize on keydown too
+  setTimeout(() => {
+    searchPhone.value = searchPhone.value.replace(/\D/g, '').slice(0, 10);
+  }, 0);
+  if (e.key === 'Enter') searchByPhone();
+});
+
+searchClose.addEventListener('click', () => {
+  searchModal.classList.add('hidden');
+});
+
+searchModal.addEventListener('click', (e) => {
+  if (e.target === searchModal) {
+    searchModal.classList.add('hidden');
+  }
+});
 
 // ══════════════════════════════════════════════
 //  CATEGORY TABS
@@ -1140,6 +1249,10 @@ async function loadSummaryView(view) {
           <div class="stat-card stat-cancelled">
             <div class="stat-value">${data.cancelled}</div>
             <div class="stat-label">Cancelados</div>
+          </div>
+          <div class="stat-card stat-new-clients">
+            <div class="stat-value">${data.new_clients}</div>
+            <div class="stat-label">Clientes Nuevos</div>
           </div>
         </div>
       `;

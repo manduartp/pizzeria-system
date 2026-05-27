@@ -33,6 +33,16 @@ module.exports = function (io) {
       const created = db.prepare('SELECT * FROM orders WHERE id = ?')
         .get(order.lastInsertRowid);
 
+      // Determine if this is a new client
+      let isNewClient = false;
+      if (created.client_phone) {
+        const prev = db.prepare(
+          "SELECT COUNT(*) as c FROM orders WHERE client_phone = ? AND id != ? AND status != 'cancelled'"
+        ).get(created.client_phone, created.id);
+        isNewClient = prev.c === 0;
+      }
+      created.is_new_client = isNewClient;
+
       io.emit('order:new', created);
       console.log('New order #' + created.id + ' — $' + created.total);
       res.status(201).json(created);
@@ -86,6 +96,16 @@ module.exports = function (io) {
 
       const updated = db.prepare('SELECT * FROM orders WHERE id = ?')
         .get(req.params.id);
+
+      // Recompute new client flag (phone may have changed)
+      let isNewClient = false;
+      if (updated.client_phone) {
+        const prev = db.prepare(
+          "SELECT COUNT(*) as c FROM orders WHERE client_phone = ? AND id != ? AND status != 'cancelled'"
+        ).get(updated.client_phone, updated.id);
+        isNewClient = prev.c === 0;
+      }
+      updated.is_new_client = isNewClient;
 
       // Tell clients whether kitchen needs to react
       io.emit('order:updated', { ...updated, kitchen_changed: kitchenChanged });
@@ -162,7 +182,17 @@ module.exports = function (io) {
         COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total + delivery_fee ELSE 0 END), 0) as total_sales,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled
+        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+        (SELECT COUNT(*) FROM (
+          SELECT client_phone FROM orders
+          WHERE DATE(created_at) = DATE('now','localtime')
+            AND status = 'completed' AND client_phone != ''
+            AND client_phone NOT IN (
+              SELECT client_phone FROM orders
+              WHERE DATE(created_at) < DATE('now','localtime') AND status != 'cancelled'
+            )
+          GROUP BY client_phone
+        )) as new_clients
       FROM orders WHERE DATE(created_at) = DATE('now','localtime')
     `).get();
     res.json(summary);
@@ -175,9 +205,18 @@ module.exports = function (io) {
         COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total + delivery_fee ELSE 0 END), 0) as total_sales,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled
+        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+        (SELECT COUNT(*) FROM (
+          SELECT client_phone FROM orders
+          WHERE DATE(created_at) = ? AND status = 'completed' AND client_phone != ''
+            AND client_phone NOT IN (
+              SELECT client_phone FROM orders
+              WHERE DATE(created_at) < ? AND status != 'cancelled'
+            )
+          GROUP BY client_phone
+        )) as new_clients
       FROM orders WHERE DATE(created_at) = ?
-    `).get(req.params.date);
+    `).get(req.params.date, req.params.date, req.params.date);
     res.json(summary);
   });
 
@@ -234,6 +273,21 @@ module.exports = function (io) {
     } catch (err) {
       console.error('Error looking up phone:', err);
       res.status(500).json({ error: 'Failed to look up phone' });
+    }
+  });
+
+  // ─── ORDER HISTORY BY PHONE (search) ───
+  router.get('/history/by-phone/:phone', (req, res) => {
+    try {
+      const orders = db.prepare(`
+        SELECT * FROM orders
+        WHERE client_phone = ?
+        ORDER BY created_at DESC
+      `).all(req.params.phone);
+      res.json(orders);
+    } catch (err) {
+      console.error('Error searching by phone:', err);
+      res.status(500).json({ error: 'Failed to search orders' });
     }
   });
 

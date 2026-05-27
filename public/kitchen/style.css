@@ -189,6 +189,25 @@ header h1 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── NEW CLIENT TAG ── */
+.new-client-tag {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #1a4a1a;
+  color: #4f8;
+  font-size: 1rem;
+  font-weight: bold;
+  vertical-align: middle;
+  animation: blinkTag 2s ease-in-out infinite;
+}
+
+@keyframes blinkTag {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 /* ── CONNECTION STATUS ── */
 .connection-status {
   position: fixed;

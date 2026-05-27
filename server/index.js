@@ -58,8 +58,19 @@ io.on('connection', (socket) => {
     .prepare("SELECT * FROM orders WHERE status = 'pending' ORDER BY created_at ASC")
     .all();
 
-  // No more JSON.parse — data is already plain strings
-  socket.emit('orders:all', orders);
+  // Enrich each order with is_new_client flag
+  const enriched = orders.map(order => {
+    let isNewClient = false;
+    if (order.client_phone) {
+      const prev = db.prepare(
+        "SELECT COUNT(*) as c FROM orders WHERE client_phone = ? AND id < ? AND status != 'cancelled'"
+      ).get(order.client_phone, order.id);
+      isNewClient = prev.c === 0;
+    }
+    return { ...order, is_new_client: isNewClient };
+  });
+
+  socket.emit('orders:all', enriched);
 
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
