@@ -543,9 +543,18 @@ header h1 {
 }
 
 .order-items-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.85rem;
   color: #444;
   line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.items-text {
+  flex: 1;
+  min-width: 0;
   word-wrap: break-word;
 }
 

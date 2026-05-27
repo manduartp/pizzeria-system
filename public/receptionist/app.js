@@ -795,9 +795,11 @@ function renderActiveOrders() {
             <span class="order-header-left">#${order.id}${order.client_name ? ' — ' + order.client_name : ''} — ${timeStr}${modified}${headerDetail}</span>
             <span class="order-total-label">${peso(grandTotal)}</span>
           </div>
-          <div class="order-items-row">${itemsLine}</div>
+          <div class="order-items-row">
+            <span class="items-text">${itemsLine}</span>
+            ${order.is_new_client ? '<span class="new-client-card-tag">Nuevo Cliente</span>' : ''}
+          </div>
           ${order.notes ? `<div class="order-info-row">📝 ${order.notes}</div>` : ''}
-          ${order.is_new_client ? '<div class="order-info-row new-client-card-tag">Nuevo Cliente</div>' : ''}
         </div>
         <div class="card-actions">
           <button class="btn-action btn-edit" data-id="${order.id}">✏️ Editar</button>
