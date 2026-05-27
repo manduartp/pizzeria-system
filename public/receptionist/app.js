@@ -755,6 +755,7 @@ function clearForm() {
   deliveryFeeInput.value = '';
   orderNotesInput.value = '';
   autoResizeNotes();
+  newClientBadge.classList.add('hidden');
 }
 
 // ══════════════════════════════════════════════
