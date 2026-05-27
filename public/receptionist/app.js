@@ -266,7 +266,6 @@ async function searchByPhone() {
         card.addEventListener('click', () => {
           const order = searchResultsList._orders.find(o => o.id === parseInt(card.dataset.orderId));
           if (order) {
-            searchModal.classList.add('hidden');
             showTicket(order);
           }
         });
@@ -274,6 +273,7 @@ async function searchByPhone() {
     }
 
     searchModal.classList.remove('hidden');
+    searchPhone.value = '';
   } catch (err) {
     console.error('Search failed:', err);
     alert('Error al buscar. Verifica la conexión.');

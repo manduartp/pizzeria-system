@@ -869,6 +869,10 @@ header h1 {
   max-width: 340px;
 }
 
+#ticket-modal {
+  z-index: 1100;
+}
+
 .ticket {
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
