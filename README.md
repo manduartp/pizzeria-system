@@ -290,6 +290,14 @@ The layout is fully responsive — below 768px it stacks vertically: menu → cl
 - Click 📥 button or press Enter to confirm (values become editable)
 - Click/tab outside the phone field to dismiss (restores previous values)
 
+### 🟢 New Client Detection
+- When a 10-digit phone has no previous orders → "Nuevo Cliente" badge appears
+  - **Receptionist sidebar:** green blinking pill next to "Datos del Cliente"
+  - **Active order cards:** green tag on the right of the items row
+  - **Kitchen display:** green `[Nuevo Cliente]` tag on the order row
+- Tickets are **not** affected (uses `display_text`, not `kitchen_text`)
+- Daily summary: "Clientes Nuevos" stat counts unique phones whose first-ever completed order was today
+
 ### 🧾 Ticket Printing
 - Thermal printer via WebUSB + ESC/POS (Chrome/Chromium only)
 - Connect printer via "🔌 Conectar Impresora" button
