@@ -797,6 +797,7 @@ function renderActiveOrders() {
           </div>
           <div class="order-items-row">${itemsLine}</div>
           ${order.notes ? `<div class="order-info-row">📝 ${order.notes}</div>` : ''}
+          ${order.is_new_client ? '<div class="order-info-row new-client-card-tag">Nuevo Cliente</div>' : ''}
         </div>
         <div class="card-actions">
           <button class="btn-action btn-edit" data-id="${order.id}">✏️ Editar</button>
