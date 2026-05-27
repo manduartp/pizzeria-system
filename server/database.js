@@ -5,6 +5,9 @@ const db = new Database(path.join(__dirname, '..', 'pizzeria.db'));
 
 db.pragma('journal_mode = WAL');
 
+// Index for fast phone lookups (autofill, future client features)
+db.exec("CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(client_phone)");
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

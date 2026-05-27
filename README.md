@@ -118,6 +118,8 @@ CREATE TABLE IF NOT EXISTS orders (
 
 Database uses **WAL journal mode** for concurrent read performance.
 
+An **index on `client_phone`** (`idx_orders_phone`) is created on startup for fast phone lookups (autofill, future client features).
+
 All dates stored with `datetime('now','localtime')` — the server's timezone is used.
 
 ---
