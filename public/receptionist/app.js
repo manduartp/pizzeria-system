@@ -265,7 +265,10 @@ async function searchByPhone() {
       searchResultsList.querySelectorAll('.search-result-card.clickable').forEach(card => {
         card.addEventListener('click', () => {
           const order = searchResultsList._orders.find(o => o.id === parseInt(card.dataset.orderId));
-          if (order) showTicket(order);
+          if (order) {
+            searchModal.classList.add('hidden');
+            showTicket(order);
+          }
         });
       });
     }
