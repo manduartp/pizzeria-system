@@ -249,7 +249,7 @@ async function searchByPhone() {
         const infoLine = infoParts.join(' · ');
 
         return `
-          <div class="search-result-card">
+          <div class="search-result-card clickable" data-order-id="${order.id}">
             <div class="search-result-header">
               <span>${statusIcon} #${order.id} — ${dateStr} — ${timeStr}</span>
               <span class="search-result-total">${peso(grandTotal)}</span>
@@ -259,6 +259,15 @@ async function searchByPhone() {
           </div>
         `;
       }).join('');
+
+      // Make cards clickable to show ticket
+      searchResultsList._orders = orders;
+      searchResultsList.querySelectorAll('.search-result-card.clickable').forEach(card => {
+        card.addEventListener('click', () => {
+          const order = searchResultsList._orders.find(o => o.id === parseInt(card.dataset.orderId));
+          if (order) showTicket(order);
+        });
+      });
     }
 
     searchModal.classList.remove('hidden');
