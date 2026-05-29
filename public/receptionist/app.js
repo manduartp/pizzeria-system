@@ -603,11 +603,28 @@ btnSend.addEventListener('click', async () => {
 
   const delivery_fee = parseFloat(deliveryFeeInput.value) || 0;
 
-  // Confirm if delivery fee is 0
-  if (delivery_fee === 0) {
-    const ok = await showConfirmModal('🚗', 'El costo de envío es $0. ¿Continuar?', 'Sí, continuar', 'btn-add');
-    if (!ok) return;
-  }
+  // Ask whether to print
+  let doPrint = false;
+  let doSend = false;
+
+  confirmIcon.textContent = '🍕';
+  confirmMessage.textContent = '¿Enviar a cocina e imprimir ticket?';
+  confirmYes.textContent = 'Enviar e Imprimir 🖨️';
+  confirmYes.className = 'btn-add';
+  confirmNo.textContent = 'Solo Enviar';
+  confirmModal.classList.remove('hidden');
+
+  const printResult = await new Promise(resolve => {
+    confirmYes.onclick = () => { confirmModal.classList.add('hidden'); resolve('print'); };
+    confirmNo.onclick = () => { confirmModal.classList.add('hidden'); resolve('send'); };
+    confirmModal.onclick = (e) => {
+      if (e.target === confirmModal) { confirmModal.classList.add('hidden'); resolve('cancel'); }
+    };
+  });
+
+  if (printResult === 'cancel') return;
+  doPrint = printResult === 'print';
+  doSend = true;
 
   const kitchen_text = buildKitchenText();
   const display_text = buildDisplayText();
@@ -647,6 +664,16 @@ btnSend.addEventListener('click', async () => {
 
     const result = await response.json();
     console.log('Order #' + result.id + (editingOrderId ? ' updated' : ' created'));
+
+    // Auto-print ticket if requested
+    if (doPrint) {
+      if (printerDevice) {
+        const ticketData = buildTicketBytes(result);
+        await sendToPrinter(ticketData);
+      } else {
+        showTicket(result);
+      }
+    }
 
     clearForm();
 
